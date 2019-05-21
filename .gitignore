@@ -24,3 +24,4 @@
 *train-labels-idx1-ubyte*
 *.p
 *.txt
+*.pyc
