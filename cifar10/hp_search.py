@@ -37,10 +37,11 @@ parser.add_argument('--budget', type=int, default=100, metavar='N', help='Maximu
 parser.add_argument('--model', choices=['vgg', 'resnet', 'densenet'], default='resnet')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
+parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='softmax', help='Softmax type')
 args = parser.parse_args()
 args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
-def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batch_size, valid_batch_size, n_workers, cuda, data_path, valid_data_path, checkpoint_path):
+def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batch_size, valid_batch_size, n_workers, cuda, data_path, valid_data_path, checkpoint_path, softmax):
 
 	cp_name = get_cp_name(checkpoint_path)
 
@@ -56,11 +57,11 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batc
 	valid_loader = torch.utils.data.DataLoader(validset, batch_size=valid_batch_size, shuffle=False, num_workers=n_workers)
 
 	if model == 'vgg':
-		model = vgg.VGG('VGG16')
+		model = vgg.VGG('VGG16', sm_type=softmax)
 	elif model == 'resnet':
-		model = resnet.ResNet18()
+		model = resnet.ResNet18(sm_type=softmax)
 	elif model == 'densenet':
-		model = densenet.densenet_cifar()
+		model = densenet.densenet_cifar(sm_type=softmax)
 
 	if cuda:
 		model = model.cuda()
@@ -81,6 +82,18 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batc
 
 			print(' ')
 			print('Best cost in file ' + cp_name + 'was: {}'.format(cost))
+			print(' ')
+			print('With hyperparameters:')
+			print('Selected model: {}'.format(model))
+			print('Batch size: {}'.format(batch_size))
+			print('LR: {}'.format(lr))
+			print('Momentum: {}'.format(momentum))
+			print('l2: {}'.format(l2))
+			print('lambda: {}'.format(lamb))
+			print('Margin: {}'.format(margin))
+			print('Swap: {}'.format(swap))
+			print('Patience: {}'.format(patience))
+			print('Softmax Mode is: {}'.format(softmax))
 			print(' ')
 
 			return cost
@@ -106,8 +119,9 @@ cuda = args.cuda
 data_path = args.data_path
 valid_data_path = args.valid_data_path
 checkpoint_path=args.checkpoint_path
+softmax=args.softmax
 
-instrum = instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batch_size, valid_batch_size, n_workers, cuda, data_path, valid_data_path, checkpoint_path)
+instrum = instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batch_size, valid_batch_size, n_workers, cuda, data_path, valid_data_path, checkpoint_path, softmax)
 
 hp_optimizer = optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget)
 

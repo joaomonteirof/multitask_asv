@@ -36,7 +36,7 @@ class Transition(nn.Module):
 
 
 class DenseNet(nn.Module):
-	def __init__(self, block, nblocks, growth_rate=12, reduction=0.5, num_classes=10):
+	def __init__(self, block, nblocks, sm_type, growth_rate=12, reduction=0.5, num_classes=10):
 		super(DenseNet, self).__init__()
 		self.growth_rate = growth_rate
 
@@ -67,6 +67,13 @@ class DenseNet(nn.Module):
 		self.bn = nn.BatchNorm2d(num_planes)
 		self.linear = nn.Linear(num_planes, num_classes)
 
+		if sm_type=='softmax':
+			self.linear=Softmax(input_features=num_planes, output_features=num_classes)
+		elif sm_type=='am_softmax':
+			self.linear=AMSoftmax(input_features=num_planes, output_features=num_classes)
+		else:
+			raise NotImplementedError
+
 	def _make_dense_layers(self, block, in_planes, nblock):
 		layers = []
 		for i in range(nblock):
@@ -85,17 +92,17 @@ class DenseNet(nn.Module):
 
 		return self.linear(out), out
 
-def DenseNet121():
-	return DenseNet(Bottleneck, [6,12,24,16], growth_rate=32)
+def DenseNet121(sm_type='softmax'):
+	return DenseNet(Bottleneck, [6,12,24,16], sm_type, growth_rate=32)
 
-def DenseNet169():
-	return DenseNet(Bottleneck, [6,12,32,32], growth_rate=32)
+def DenseNet169(sm_type='softmax'):
+	return DenseNet(Bottleneck, [6,12,32,32], sm_type, growth_rate=32)
 
-def DenseNet201():
-	return DenseNet(Bottleneck, [6,12,48,32], growth_rate=32)
+def DenseNet201(sm_type='softmax'):
+	return DenseNet(Bottleneck, [6,12,48,32], sm_type, growth_rate=32)
 
-def DenseNet161():
-	return DenseNet(Bottleneck, [6,12,36,24], growth_rate=48)
+def DenseNet161(sm_type='softmax'):
+	return DenseNet(Bottleneck, [6,12,36,24], sm_type, growth_rate=48)
 
-def densenet_cifar():
-	return DenseNet(Bottleneck, [6,12,24,16], growth_rate=12)
+def densenet_cifar(sm_type='softmax'):
+	return DenseNet(Bottleneck, [6,12,24,16], sm_type, growth_rate=12)

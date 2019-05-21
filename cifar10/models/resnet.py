@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.autograd import Variable
+from losses import AMSoftmax, Softmax
 
 
 class BasicBlock(nn.Module):
@@ -65,7 +65,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-	def __init__(self, block, num_blocks, num_classes=10):
+	def __init__(self, block, num_blocks, sm_type, num_classes=10):
 		super(ResNet, self).__init__()
 		self.in_planes = 64
 
@@ -75,7 +75,15 @@ class ResNet(nn.Module):
 		self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
 		self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
 		self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+
 		self.linear = nn.Linear(512*block.expansion, num_classes)
+
+		if sm_type=='softmax':
+			self.linear=Softmax(input_features=512*block.expansion, output_features=num_classes)
+		elif sm_type=='am_softmax':
+			self.linear=AMSoftmax(input_features=512*block.expansion, output_features=num_classes)
+		else:
+			raise NotImplementedError
 
 	def _make_layer(self, block, planes, num_blocks, stride):
 		strides = [stride] + [1]*(num_blocks-1)
@@ -96,17 +104,17 @@ class ResNet(nn.Module):
 
 		return self.linear(out), out
 
-def ResNet18():
-	return ResNet(BasicBlock, [2,2,2,2])
+def ResNet18(sm_type='softmax'):
+	return ResNet(BasicBlock, [2,2,2,2], sm_type)
 
-def ResNet34():
-	return ResNet(BasicBlock, [3,4,6,3])
+def ResNet34(sm_type='softmax'):
+	return ResNet(BasicBlock, [3,4,6,3], sm_type)
 
-def ResNet50():
-	return ResNet(Bottleneck, [3,4,6,3])
+def ResNet50(sm_type='softmax'):
+	return ResNet(Bottleneck, [3,4,6,3], sm_type)
 
-def ResNet101():
-	return ResNet(Bottleneck, [3,4,23,3])
+def ResNet101(sm_type='softmax'):
+	return ResNet(Bottleneck, [3,4,23,3], sm_type)
 
-def ResNet152():
-	return ResNet(Bottleneck, [3,8,36,3])
+def ResNet152(sm_type='softmax'):
+	return ResNet(Bottleneck, [3,8,36,3], sm_type)

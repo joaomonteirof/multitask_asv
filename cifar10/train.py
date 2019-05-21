@@ -35,6 +35,7 @@ parser.add_argument('--save-every', type=int, default=1, metavar='N', help='how 
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 parser.add_argument('--no-cp', action='store_true', default=False, help='Disables checkpointing')
 parser.add_argument('--verbose', type=int, default=1, metavar='N', help='Verbose is activated if > 0')
+parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='softmax', help='Softmax type')
 args = parser.parse_args()
 args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
@@ -53,11 +54,11 @@ validset = datasets.CIFAR10(root='./data', train=False, download=True, transform
 valid_loader = torch.utils.data.DataLoader(validset, batch_size=args.valid_batch_size, shuffle=False, num_workers=args.n_workers)
 
 if args.model == 'vgg':
-	model = vgg.VGG('VGG16')
+	model = vgg.VGG('VGG16', sm_type=args.softmax)
 elif args.model == 'resnet':
-	model = resnet.ResNet18()
+	model = resnet.ResNet18(sm_type=args.softmax)
 elif args.model == 'densenet':
-	model = densenet.densenet_cifar()
+	model = densenet.densenet_cifar(sm_type=args.softmax)
 
 if args.cuda:
 	model = model.cuda()
@@ -77,5 +78,6 @@ if args.verbose >0:
 	print('Margin: {}'.format(args.margin))
 	print('Swap: {}'.format(args.swap))
 	print('Patience: {}'.format(args.patience))
+	print('Softmax Mode is: {}'.format(args.softmax))
 
 trainer.train(n_epochs=args.epochs, save_every=args.save_every)
