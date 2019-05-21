@@ -54,7 +54,7 @@ parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='l
 parser.add_argument('--n-frames', type=int, default=800, metavar='N', help='maximum number of frames per utterance (default: 800)')
 parser.add_argument('--n-cycles', type=int, default=10, metavar='N', help='cycles over speakers list to complete 1 epoch')
 parser.add_argument('--valid-n-cycles', type=int, default=500, metavar='N', help='cycles over speakers list to complete 1 epoch')
-parser.add_argument('--softmax', action='store_true', default=False, help='Adds softmax layer for speaker identification auxiliary task')
+parser.add_argument('--softmax', choices=['none', 'softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--pretrain', action='store_true', default=False, help='Adds softmax layer for speaker identification and train exclusively with CE minimization')
 parser.add_argument('--mine-triplets', action='store_true', default=False, help='Enables distance mining for triplets')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
@@ -71,7 +71,7 @@ if args.pretrain:
 	train_dataset = Loader_pretrain(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
 elif args.mine_triplets:
 	train_dataset = Loader_mining(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
-elif args.softmax:
+elif args.softmax!='none':
 	train_dataset = Loader_softmax(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
 else:
 	train_dataset = Loader(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
@@ -90,21 +90,21 @@ else:
 	device = None
 
 if args.model == 'mfcc':
-	model = model_.cnn_lstm_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef)
+	model = model_.cnn_lstm_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'fb':
-	model = model_.cnn_lstm_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None)
+	model = model_.cnn_lstm_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, sm_type=args.softmax)
 elif args.model == 'resnet_fb':
-	model = model_.ResNet_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None)
+	model = model_.ResNet_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, sm_type=args.softmax)
 elif args.model == 'resnet_mfcc':
-	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef)
+	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_lstm':
-	model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef)
+	model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_stats':
-	model = model_.ResNet_stats(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef)
+	model = model_.ResNet_stats(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'inception_mfcc':
-	model = model_.inception_v3(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef)
+	model = model_.inception_v3(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_large':
-	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef)
+	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax or args.pretrain else None, ncoef=args.ncoef, sm_type=args.softmax)
 
 if args.pretrained_path is not None:
 	ckpt = torch.load(args.pretrained_path, map_location = lambda storage, loc: storage)

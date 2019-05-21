@@ -42,6 +42,7 @@ parser.add_argument('--lamb', type=float, default=0.001, metavar='l', help='Entr
 parser.add_argument('--swap', type=str, default=None, help='Swaps anchor and positive depending on distance to negative example')
 parser.add_argument('--patience', type=int, default=10, metavar='S', help='Epochs to wait before decreasing LR by a factor of 0.5 (default: 10)')
 parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large'], default='fb', help='Model arch according to input type')
+parser.add_argument('--softmax', choices=['none', 'softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 parser.add_argument('--train-hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
@@ -71,21 +72,21 @@ valid_dataset = Loader(hdf5_name = args.valid_hdf_file, max_nb_frames = args.n_f
 valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, worker_init_fn=set_np_randomseed)
 
 if args.model == 'mfcc':
-	model = model_.cnn_lstm_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef)
+	model = model_.cnn_lstm_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'fb':
-	model = model_.cnn_lstm_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list))
+	model = model_.cnn_lstm_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), sm_type=args.softmax)
 elif args.model == 'resnet_fb':
-	model = model_.ResNet_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list))
+	model = model_.ResNet_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), sm_type=args.softmax)
 elif args.model == 'resnet_mfcc':
-	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef)
+	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_lstm':
-	model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef)
+	model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_stats':
-	model = model_.ResNet_stats(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef)
+	model = model_.ResNet_stats(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'inception_mfcc':
-	model = model_.inception_v3(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef)
+	model = model_.inception_v3(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_large':
-	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef)
+	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 
 if args.cuda:
 	model = model.cuda(device)

@@ -52,6 +52,7 @@ parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large'], default='fb', help='Model arch according to input type')
+parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -63,7 +64,7 @@ parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path',
 args=parser.parse_args()
 args.cuda=True if not args.no_cuda and torch.cuda.is_available() else False
 
-def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, data_info_path, valid_hdf_file, valid_n_cycles, cp_path):
+def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, data_info_path, valid_hdf_file, valid_n_cycles, cp_path, softmax):
 
 	if cuda:
 		device=get_freer_gpu()
@@ -75,21 +76,21 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 	valid_loader=torch.utils.data.DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, num_workers=n_workers, worker_init_fn=set_np_randomseed)
 
 	if model == 'mfcc':
-		model=model_.cnn_lstm_mfcc(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef)
+		model=model_.cnn_lstm_mfcc(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax)
 	elif model == 'fb':
-		model=model_.cnn_lstm_fb(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list))
+		model=model_.cnn_lstm_fb(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), sm_type=softmax)
 	elif model == 'resnet_fb':
-		model=model_.ResNet_fb(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list))
+		model=model_.ResNet_fb(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), sm_type=softmax)
 	elif model == 'resnet_mfcc':
-		model=model_.ResNet_mfcc(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef)
+		model=model_.ResNet_mfcc(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax)
 	elif model == 'resnet_lstm':
-		model=model_.ResNet_lstm(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef)
+		model=model_.ResNet_lstm(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax)
 	elif model == 'resnet_stats':
-		model=model_.ResNet_stats(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef)
+		model=model_.ResNet_stats(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax)
 	elif model == 'inception_mfcc':
-		model=model_.inception_v3(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef)
+		model=model_.inception_v3(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax)
 	elif args.model == 'resnet_large':
-		model = model_.ResNet_large_lstm(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef)
+		model = model_.ResNet_large_lstm(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax)
 
 	if cuda:
 		model=model.cuda(device)
@@ -122,8 +123,9 @@ data_info_path=args.data_info_path
 valid_hdf_file=args.valid_hdf_file
 valid_n_cycles=args.valid_n_cycles
 checkpoint_path=args.checkpoint_path
+softmax=args.softmax
 
-instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, data_info_path, valid_hdf_file, valid_n_cycles, checkpoint_path)
+instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, data_info_path, valid_hdf_file, valid_n_cycles, checkpoint_path, softmax)
 
 hp_optimizer=optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
 

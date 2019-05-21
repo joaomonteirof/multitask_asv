@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
+from utils.losses import AMSoftmax, Softmax
 
 
 class cnn_lstm_mfcc(nn.Module):
-	def __init__(self, n_z=256, proj_size=None, ncoef=23):
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none'):
 		super(cnn_lstm_mfcc, self).__init__()
 
 		self.features = nn.Sequential(
@@ -27,8 +28,13 @@ class cnn_lstm_mfcc(nn.Module):
 		self.fc_mu = nn.Sequential(
 			nn.Linear(512*2, n_z) )
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		self.initialize_params()
 
@@ -69,7 +75,7 @@ class cnn_lstm_mfcc(nn.Module):
 				layer.bias.data.zero_()
 
 class cnn_lstm_fb(nn.Module):
-	def __init__(self, n_z=256, proj_size=None):
+	def __init__(self, n_z=256, proj_size=0, sm_type='none'):
 		super(cnn_lstm_fb, self).__init__()
 
 		self.features = nn.Sequential(
@@ -91,8 +97,13 @@ class cnn_lstm_fb(nn.Module):
 		self.fc_mu = nn.Sequential(
 			nn.Linear(512*2, n_z) )
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		self.initialize_params()
 
@@ -293,7 +304,7 @@ class Bottleneck(nn.Module):
 		return out
 
 class ResNet_fb(nn.Module):
-	def __init__(self, n_z=256, layers=[2,2,2,2], block=Bottleneck, proj_size=None):
+	def __init__(self, n_z=256, layers=[2,2,2,2], block=Bottleneck, proj_size=0, sm_type='none'):
 		self.inplanes = 16
 		super(ResNet_fb, self).__init__()
 	
@@ -316,8 +327,13 @@ class ResNet_fb(nn.Module):
 
 		self.fc_mu = nn.Linear(512, n_z)
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		self.initialize_params()
 
@@ -363,7 +379,7 @@ class ResNet_fb(nn.Module):
 		return mu
 
 class ResNet_mfcc(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=None, ncoef=23):
+	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
 		self.inplanes = 32
 		super(ResNet_mfcc, self).__init__()
 
@@ -383,8 +399,13 @@ class ResNet_mfcc(nn.Module):
 
 		self.fc_mu = nn.Linear(512, n_z)
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		self.initialize_params()
 
@@ -461,7 +482,7 @@ class ResNet_mfcc(nn.Module):
 		return out[out_index]
 
 class ResNet_lstm(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=None, ncoef=23):
+	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
 		self.inplanes = 32
 		super(ResNet_lstm, self).__init__()
 	
@@ -483,8 +504,13 @@ class ResNet_lstm(nn.Module):
 
 		self.fc_mu = nn.Linear(512, n_z)
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		self.initialize_params()
 
@@ -542,7 +568,7 @@ class ResNet_lstm(nn.Module):
 		return mu
 
 class ResNet_large_lstm(nn.Module):
-	def __init__(self, n_z=256, layers=[3,8,36,3], block=Bottleneck, proj_size=None, ncoef=23):
+	def __init__(self, n_z=256, layers=[3,8,36,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
 		self.inplanes = 32
 		super(ResNet_large_lstm, self).__init__()
 	
@@ -564,8 +590,13 @@ class ResNet_large_lstm(nn.Module):
 
 		self.fc_mu = nn.Linear(512, n_z)
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		self.initialize_params()
 
@@ -623,7 +654,7 @@ class ResNet_large_lstm(nn.Module):
 		return mu
 
 class ResNet_stats(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=None, ncoef=23):
+	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
 		self.inplanes = 16
 		super(ResNet_stats, self).__init__()
 	
@@ -641,8 +672,13 @@ class ResNet_stats(nn.Module):
 
 		self.fc_mu = nn.Linear(512, n_z)
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		self.initialize_params()
 
@@ -712,7 +748,7 @@ class inception_v3(nn.Module):
 	Implementation adapted from: https://github.com/pytorch/vision/blob/master/torchvision/models/inception.py
 	"""
 
-	def __init__(self, n_z=256, block=Bottleneck, proj_size=None, ncoef=23):
+	def __init__(self, n_z=256, block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
 		super(inception_v3, self).__init__()
 		self.Conv2d_1a_3x3 = BasicConv2d(1, 32, kernel_size=(ncoef,3), stride=2)
 		self.Conv1d_2a_3x3 = BasicConv1d(32, 32, kernel_size=3)
@@ -739,8 +775,13 @@ class inception_v3(nn.Module):
 
 		self.fc_mu = nn.Linear(512, n_z)
 
-		if proj_size:
-			self.out_proj=nn.Sequential( nn.Linear(n_z, proj_size) )
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 		for m in self.modules():
 			if isinstance(m, nn.Conv2d) or isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear):
