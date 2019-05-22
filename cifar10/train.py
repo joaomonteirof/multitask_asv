@@ -6,7 +6,6 @@ from train_loop import TrainLoop
 import torch.optim as optim
 from torchvision import datasets, transforms
 from models import vgg, resnet, densenet
-from data_load import Loader
 import numpy as np
 
 def set_np_randomseed(worker_id):
