@@ -76,8 +76,6 @@ class ResNet(nn.Module):
 		self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
 		self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
 
-		self.out_proj = nn.Linear(512*block.expansion, num_classes)
-
 		if sm_type=='softmax':
 			self.out_proj=Softmax(input_features=512*block.expansion, output_features=num_classes)
 		elif sm_type=='am_softmax':
