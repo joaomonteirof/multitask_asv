@@ -159,7 +159,7 @@ class TrainLoop(object):
 		embeddings = self.model.forward(x)
 
 		embeddings = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
-		embeddings_norm = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
+		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
 		loss_class = torch.nn.CrossEntropyLoss()(self.model.out_proj(embeddings_norm, y), y)
 
@@ -198,7 +198,7 @@ class TrainLoop(object):
 		with torch.no_grad():
 
 			embeddings = self.model.forward(x)
-			embeddings_norm = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
+			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 			out=self.model.out_proj(embeddings_norm, y)
 
 			pred = F.softmax(out, dim=1).max(1)[1].long()

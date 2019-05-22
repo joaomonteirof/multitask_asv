@@ -191,7 +191,7 @@ class TrainLoop(object):
 
 			embeddings = self.model.forward(utterances)
 
-			embeddings_norm = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
+			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
 			triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
 
@@ -215,7 +215,7 @@ class TrainLoop(object):
 			emb_p = torch.div(emb_p, torch.norm(emb_p, 2, 1).unsqueeze(1).expand_as(emb_p))
 			emb_n = torch.div(emb_n, torch.norm(emb_n, 2, 1).unsqueeze(1).expand_as(emb_n))
 
-			embeddings_norm = torch.div(emb_a, torch.norm(emb_a, 2, 1).unsqueeze(1).expand_as(emb_a))
+			embeddings_norm = F.normalize(emb_a, p=2, dim=1)
 
 		loss = self.triplet_loss(emb_a, emb_p, emb_n)
 
@@ -254,7 +254,9 @@ class TrainLoop(object):
 
 		embeddings = self.model.forward(utt)
 
-		loss = F.cross_entropy(self.model.out_proj(embeddings), y.squeeze())
+		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+
+		loss = F.cross_entropy(self.model.out_proj(embeddings_norm), y.squeeze())
 
 		loss.backward()
 		self.optimizer.step()
