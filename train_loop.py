@@ -215,6 +215,8 @@ class TrainLoop(object):
 			emb_p = torch.div(emb_p, torch.norm(emb_p, 2, 1).unsqueeze(1).expand_as(emb_p))
 			emb_n = torch.div(emb_n, torch.norm(emb_n, 2, 1).unsqueeze(1).expand_as(emb_n))
 
+			embeddings_norm = torch.div(emb_a, torch.norm(emb_a, 2, 1).unsqueeze(1).expand_as(emb_a))
+
 		loss = self.triplet_loss(emb_a, emb_p, emb_n)
 
 		loss_log = loss.item()
@@ -227,7 +229,7 @@ class TrainLoop(object):
 			if self.cuda_mode:
 				y = y.cuda(self.device).squeeze()
 
-			ce = F.cross_entropy(self.model.out_proj(embeddings, y), y) if self.mining else F.cross_entropy(self.model.out_proj(emb_a, y), y)
+			ce = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y) if self.mining else F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
 			loss += ce
 			loss.backward()
 			self.optimizer.step()
