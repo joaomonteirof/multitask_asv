@@ -7,6 +7,8 @@ import torch.nn.functional as F
 
 from torch.autograd import Variable
 
+from losses import AMSoftmax, Softmax
+
 
 class Bottleneck(nn.Module):
 	def __init__(self, in_planes, growth_rate):
