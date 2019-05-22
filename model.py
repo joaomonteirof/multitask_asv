@@ -28,6 +28,8 @@ class cnn_lstm_mfcc(nn.Module):
 		self.fc_mu = nn.Sequential(
 			nn.Linear(512*2, n_z) )
 
+		self.initialize_params()
+
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
 				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
@@ -35,8 +37,6 @@ class cnn_lstm_mfcc(nn.Module):
 				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
 			else:
 				raise NotImplementedError
-
-		self.initialize_params()
 
 	def forward(self, x):
 
@@ -97,6 +97,8 @@ class cnn_lstm_fb(nn.Module):
 		self.fc_mu = nn.Sequential(
 			nn.Linear(512*2, n_z) )
 
+		self.initialize_params()
+
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
 				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
@@ -104,8 +106,6 @@ class cnn_lstm_fb(nn.Module):
 				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
 			else:
 				raise NotImplementedError
-
-		self.initialize_params()
 
 	def forward(self, x):
 
@@ -320,12 +320,14 @@ class ResNet_fb(nn.Module):
 		self.conv5 = nn.Conv2d(512, 512, kernel_size=(5,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn5 = nn.BatchNorm2d(512)
 
-		self.attention = SelfAttention(512)
-
 		self.fc = nn.Linear(2*512,512)
 		self.lbn = nn.BatchNorm1d(512)
 
 		self.fc_mu = nn.Linear(512, n_z)
+
+		self.initialize_params()
+
+		self.attention = SelfAttention(512)
 
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
@@ -335,7 +337,7 @@ class ResNet_fb(nn.Module):
 			else:
 				raise NotImplementedError
 
-		self.initialize_params()
+
 
 	def initialize_params(self):
 
@@ -391,13 +393,15 @@ class ResNet_mfcc(nn.Module):
 		self.layer2 = self._make_layer(block, 32, layers[1], stride=1)
 		self.layer3 = self._make_layer(block, 64, layers[2], stride=2)
 		self.layer4 = self._make_layer(block, 128, layers[3], stride=2)
-		
-		self.attention = SelfAttention(512)
 
 		self.fc = nn.Linear(2*512,512)
 		self.lbn = nn.BatchNorm1d(512)
 
 		self.fc_mu = nn.Linear(512, n_z)
+
+		self.initialize_params()
+
+		self.attention = SelfAttention(512)
 
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
@@ -406,8 +410,6 @@ class ResNet_mfcc(nn.Module):
 				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
 			else:
 				raise NotImplementedError
-
-		self.initialize_params()
 
 	def initialize_params(self):
 
@@ -496,13 +498,15 @@ class ResNet_lstm(nn.Module):
 		self.layer4 = self._make_layer(block, 128, layers[3], stride=2)
 
 		self.lstm = nn.LSTM(512, 256, 2, bidirectional=True, batch_first=False)
-		
-		self.attention = SelfAttention(512)
 
 		self.fc = nn.Linear(2*512+256,512)
 		self.lbn = nn.BatchNorm1d(512)
 
 		self.fc_mu = nn.Linear(512, n_z)
+
+		self.initialize_params()
+
+		self.attention = SelfAttention(512)
 
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
@@ -512,7 +516,7 @@ class ResNet_lstm(nn.Module):
 			else:
 				raise NotImplementedError
 
-		self.initialize_params()
+
 
 	def initialize_params(self):
 
@@ -582,13 +586,15 @@ class ResNet_large_lstm(nn.Module):
 		self.layer4 = self._make_layer(block, 128, layers[3], stride=2)
 
 		self.lstm = nn.LSTM(512, 256, 2, bidirectional=True, batch_first=False)
-		
-		self.attention = SelfAttention(512)
 
 		self.fc = nn.Linear(2*512+256,512)
 		self.lbn = nn.BatchNorm1d(512)
 
 		self.fc_mu = nn.Linear(512, n_z)
+
+		self.initialize_params()
+
+		self.attention = SelfAttention(512)
 
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
@@ -597,8 +603,6 @@ class ResNet_large_lstm(nn.Module):
 				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
 			else:
 				raise NotImplementedError
-
-		self.initialize_params()
 
 	def initialize_params(self):
 
@@ -672,6 +676,8 @@ class ResNet_stats(nn.Module):
 
 		self.fc_mu = nn.Linear(512, n_z)
 
+		self.initialize_params()
+
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
 				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
@@ -679,8 +685,6 @@ class ResNet_stats(nn.Module):
 				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
 			else:
 				raise NotImplementedError
-
-		self.initialize_params()
 
 	def initialize_params(self):
 
@@ -768,20 +772,10 @@ class inception_v3(nn.Module):
 		self.Mixed_7b = InceptionE(1280)
 		self.Mixed_7c = InceptionE(2048)
 
-		self.attention = SelfAttention(2048)
-
 		self.fc = nn.Linear(2*2048,512)
 		self.lbn = nn.BatchNorm1d(512)
 
 		self.fc_mu = nn.Linear(512, n_z)
-
-		if proj_size>0 and sm_type!='none':
-			if sm_type=='softmax':
-				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
-			elif sm_type=='am_softmax':
-				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
-			else:
-				raise NotImplementedError
 
 		for m in self.modules():
 			if isinstance(m, nn.Conv2d) or isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear):
@@ -794,6 +788,16 @@ class inception_v3(nn.Module):
 			elif isinstance(m, nn.BatchNorm2d):
 				nn.init.constant_(m.weight, 1)
 				nn.init.constant_(m.bias, 0)
+
+		self.attention = SelfAttention(2048)
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
 	def forward(self, x):
 
