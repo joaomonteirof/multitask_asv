@@ -9,7 +9,9 @@ from torchvision import datasets, transforms
 from models import vgg, resnet, densenet
 from data_load import Loader
 import numpy as np
-import os
+from time import sleep
+import os 
+import sys
 
 def set_np_randomseed(worker_id):
 	np.random.seed(np.random.get_state()[1][0]+worker_id)

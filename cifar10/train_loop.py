@@ -50,6 +50,7 @@ class TrainLoop(object):
 		self.harvester_val = AllTripletSelector()
 		self.verbose = verbose
 		self.save_cp = save_cp
+		self.device = next(self.model.parameters()).device
 
 		if checkpoint_epoch is not None:
 			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
@@ -148,8 +149,8 @@ class TrainLoop(object):
 		x, y = batch
 
 		if self.cuda_mode:
-			x = x.to(self.model.device)
-			y = y.to(self.model.device)
+			x = x.to(self.device)
+			y = y.to(self.device)
 
 
 		#x = x.view(x.size(0)*x.size(1), x.size(2), x.size(3), x.size(4))
@@ -165,7 +166,7 @@ class TrainLoop(object):
 		triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
 
 		if self.cuda_mode:
-			triplets_idx = triplets_idx.to(self.model.device)
+			triplets_idx = triplets_idx.to(self.device)
 
 		emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
 		emb_p = torch.index_select(embeddings_norm, 0, triplets_idx[:, 1])
@@ -191,12 +192,15 @@ class TrainLoop(object):
 		x, y = batch
 
 		if self.cuda_mode:
-			x = x.to(self.model.device)
-			y = y.to(self.model.device)
+			x = x.to(self.device)
+			y = y.to(self.device)
 
 		with torch.no_grad():
 
-			out, embeddings = self.model.forward(x)
+			embeddings = self.model.forward(x)
+			embeddings_norm = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
+			out=self.model.out_proj(embeddings_norm, y)
+
 			pred = F.softmax(out, dim=1).max(1)[1].long()
 			correct = pred.squeeze().eq(y.squeeze()).detach().sum().item()
 
