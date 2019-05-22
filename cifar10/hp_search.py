@@ -25,6 +25,21 @@ def get_cp_name(dir_):
 
 	return fname.split('/')[-1]
 
+def get_freer_gpu(trials=10):
+	sleep(2)
+	for j in range(trials):
+		os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+		memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+		dev_ = torch.device('cuda:'+str(np.argmax(memory_available)))
+		try:
+			a = torch.rand(1).cuda(dev_)
+			return dev_
+		except:
+			pass
+
+	print('NO GPU AVAILABLE!!!')
+	exit(1)
+
 # Training settings
 parser = argparse.ArgumentParser(description='Cifar10 Classification')
 parser.add_argument('--batch-size', type=int, default=24, metavar='N', help='input batch size for training (default: 24)')
@@ -64,7 +79,8 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batc
 		model = densenet.densenet_cifar(sm_type=softmax)
 
 	if cuda:
-		model = model.cuda()
+		device = get_freer_gpu()
+		model = model.cuda(device)
 
 	optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=l2, momentum=momentum)
 

@@ -12,6 +12,21 @@ import numpy as np
 def set_np_randomseed(worker_id):
 	np.random.seed(np.random.get_state()[1][0]+worker_id)
 
+def get_freer_gpu(trials=10):
+	sleep(2)
+	for j in range(trials):
+		os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+		memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+		dev_ = torch.device('cuda:'+str(np.argmax(memory_available)))
+		try:
+			a = torch.rand(1).cuda(dev_)
+			return dev_
+		except:
+			pass
+
+	print('NO GPU AVAILABLE!!!')
+	exit(1)
+
 # Training settings
 parser = argparse.ArgumentParser(description='Cifar10 Classification')
 parser.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
@@ -61,7 +76,8 @@ elif args.model == 'densenet':
 	model = densenet.densenet_cifar(sm_type=args.softmax)
 
 if args.cuda:
-	model = model.cuda()
+	device = get_freer_gpu()
+	model = model.cuda(device)
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.l2, momentum=args.momentum)
 

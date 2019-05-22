@@ -148,8 +148,8 @@ class TrainLoop(object):
 		x, y = batch
 
 		if self.cuda_mode:
-			x = x.cuda()
-			y = y.cuda()
+			x = x.to(self.model.device)
+			y = y.to(self.model.device)
 
 
 		#x = x.view(x.size(0)*x.size(1), x.size(2), x.size(3), x.size(4))
@@ -165,7 +165,7 @@ class TrainLoop(object):
 		triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
 
 		if self.cuda_mode:
-			triplets_idx = triplets_idx.cuda()
+			triplets_idx = triplets_idx.to(self.model.device)
 
 		emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
 		emb_p = torch.index_select(embeddings_norm, 0, triplets_idx[:, 1])
@@ -191,11 +191,8 @@ class TrainLoop(object):
 		x, y = batch
 
 		if self.cuda_mode:
-			x = x.cuda()
-			y = y.cuda()
-
-		#x = x.view(x.size(0)*x.size(1), x.size(2), x.size(3), x.size(4))
-		#y = y.view(y.size(0)*y.size(1))
+			x = x.to(self.model.device)
+			y = y.to(self.model.device)
 
 		with torch.no_grad():
 
