@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
-from losses import AMSoftmax, Softmax
+from models.losses import AMSoftmax, Softmax
 
 
 cfg = {

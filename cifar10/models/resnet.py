@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from losses import AMSoftmax, Softmax
+from models.losses import AMSoftmax, Softmax
 
 
 class BasicBlock(nn.Module):
