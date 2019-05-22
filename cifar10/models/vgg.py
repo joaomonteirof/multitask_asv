@@ -18,20 +18,18 @@ class VGG(nn.Module):
 	def __init__(self, vgg_name, sm_type='softmax'):
 		super(VGG, self).__init__()
 		self.features = self._make_layers(cfg[vgg_name])
-		self.classifier = nn.Linear(512, 10)
 
 		if sm_type=='softmax':
-			self.classifier=Softmax(input_features=512, output_features=10)
+			self.out_proj=Softmax(input_features=512, output_features=10)
 		elif sm_type=='am_softmax':
-			self.classifier=AMSoftmax(input_features=512, output_features=10)
+			self.out_proj=AMSoftmax(input_features=512, output_features=10)
 		else:
 			raise NotImplementedError
 
 	def forward(self, x):
 		features = self.features(x)
 		features = features.view(features.size(0), -1)
-		out = self.classifier(features)
-		return out, features
+		return features
 
 	def _make_layers(self, cfg):
 		layers = []

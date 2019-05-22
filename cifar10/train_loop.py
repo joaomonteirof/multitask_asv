@@ -155,12 +155,12 @@ class TrainLoop(object):
 		#x = x.view(x.size(0)*x.size(1), x.size(2), x.size(3), x.size(4))
 		#y = y.view(y.size(0)*y.size(1))
 
-		out, embeddings = self.model.forward(x)
+		embeddings = self.model.forward(x)
 
 		embeddings = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
 		embeddings_norm = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
 
-		loss_class = torch.nn.CrossEntropyLoss()(out, y)
+		loss_class = torch.nn.CrossEntropyLoss()(self.model.out_proj(embeddings_norm, y), y)
 
 		triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
 
