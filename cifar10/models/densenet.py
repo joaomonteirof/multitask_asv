@@ -6,8 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.autograd import Variable
-
 from losses import AMSoftmax, Softmax
+
 
 
 class Bottleneck(nn.Module):
