@@ -70,7 +70,7 @@ parser.add_argument('--valid-n-cycles', type=int, default=100, metavar='N', help
 parser.add_argument('--temp-folder', type=str, default='temp', metavar='Path', help='Temp folder for pickle files')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
 args=parser.parse_args()
-args.cuda=True if not args.no_cuda and torch.cuda.is_available() else False
+args.cuda=True if not args.no_cuda else False
 
 def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, valid_n_cycles, sge_submission_file, tmp_dir, cp_path, softmax):
 
