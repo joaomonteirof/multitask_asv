@@ -106,7 +106,7 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batc
 			print('LR: {}'.format(lr))
 			print('Momentum: {}'.format(momentum))
 			print('l2: {}'.format(l2))
-			print('lambda: {}'.format(lamb))
+			print('lambda: {}'.format(lambda_))
 			print('Margin: {}'.format(margin))
 			print('Swap: {}'.format(swap))
 			print('Patience: {}'.format(patience))
