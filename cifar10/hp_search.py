@@ -73,19 +73,19 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batc
 	valid_loader = torch.utils.data.DataLoader(validset, batch_size=valid_batch_size, shuffle=False, num_workers=n_workers)
 
 	if model == 'vgg':
-		model = vgg.VGG('VGG16', sm_type=softmax)
+		model_ = vgg.VGG('VGG16', sm_type=softmax)
 	elif model == 'resnet':
-		model = resnet.ResNet18(sm_type=softmax)
+		model_ = resnet.ResNet18(sm_type=softmax)
 	elif model == 'densenet':
-		model = densenet.densenet_cifar(sm_type=softmax)
+		model_ = densenet.densenet_cifar(sm_type=softmax)
 
 	if cuda:
 		device = get_freer_gpu()
-		model = model.cuda(device)
+		model_ = model_.cuda(device)
 
-	optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=l2, momentum=momentum)
+	optimizer = optim.SGD(model_.parameters(), lr=lr, weight_decay=l2, momentum=momentum)
 
-	trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=margin, lambda_=lambda_, patience=int(patience), verbose=-1, cp_name=cp_name, save_cp=True, checkpoint_path=checkpoint_path, swap=swap, cuda=cuda)
+	trainer = TrainLoop(model_, optimizer, train_loader, valid_loader, margin=margin, lambda_=lambda_, patience=int(patience), verbose=-1, cp_name=cp_name, save_cp=True, checkpoint_path=checkpoint_path, swap=swap, cuda=cuda)
 
 	for i in range(5):
 
