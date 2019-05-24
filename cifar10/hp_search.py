@@ -53,7 +53,6 @@ parser.add_argument('--budget', type=int, default=100, metavar='N', help='Maximu
 parser.add_argument('--model', choices=['vgg', 'resnet', 'densenet'], default='resnet')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
-parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='softmax', help='Softmax type')
 args = parser.parse_args()
 args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
@@ -136,7 +135,7 @@ cuda = args.cuda
 data_path = args.data_path
 valid_data_path = args.valid_data_path
 checkpoint_path=args.checkpoint_path
-softmax=args.softmax
+softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
 
 instrum = instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batch_size, valid_batch_size, n_workers, cuda, data_path, valid_data_path, checkpoint_path, softmax)
 

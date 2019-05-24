@@ -52,7 +52,6 @@ parser.add_argument('--slurm-sub-file', type=str, default='./run_hp.sh', metavar
 parser.add_argument('--train-hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
 parser.add_argument('--valid-hdf-file', type=str, default=None, metavar='Path', help='Path to hdf data')
 parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large'], default='fb', help='Model arch according to input type')
-parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='softmax', help='Softmax type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -129,7 +128,7 @@ valid_hdf_file=args.valid_hdf_file
 valid_n_cycles=args.valid_n_cycles
 slurm_sub_file=args.slurm_sub_file
 checkpoint_path=args.checkpoint_path
-softmax=args.softmax
+softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
 
 tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 

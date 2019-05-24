@@ -52,7 +52,6 @@ parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large'], default='fb', help='Model arch according to input type')
-parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -123,7 +122,7 @@ data_info_path=args.data_info_path
 valid_hdf_file=args.valid_hdf_file
 valid_n_cycles=args.valid_n_cycles
 checkpoint_path=args.checkpoint_path
-softmax=args.softmax
+softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
 
 instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, data_info_path, valid_hdf_file, valid_n_cycles, checkpoint_path, softmax)
 
