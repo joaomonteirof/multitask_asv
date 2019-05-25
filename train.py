@@ -106,7 +106,7 @@ elif args.model == 'inception_mfcc':
 elif args.model == 'resnet_large':
 	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_small':
-	model = model_.ResNet_small(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax)
+	model = model_.ResNet_small(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
 
 if args.pretrained_path is not None:
 	ckpt = torch.load(args.pretrained_path, map_location = lambda storage, loc: storage)
