@@ -229,7 +229,7 @@ class TrainLoop(object):
 			if self.cuda_mode:
 				y = y.cuda(self.device).squeeze()
 
-			ce = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y) if self.mining else F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
+			ce = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
 			loss += ce
 			loss.backward()
 			self.optimizer.step()
