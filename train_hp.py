@@ -41,7 +41,7 @@ parser.add_argument('--margin', type=float, default=0.3, metavar='m', help='marg
 parser.add_argument('--lamb', type=float, default=0.001, metavar='l', help='Entropy regularization penalty (default: 0.001)')
 parser.add_argument('--swap', type=str, default=None, help='Swaps anchor and positive depending on distance to negative example')
 parser.add_argument('--patience', type=int, default=10, metavar='S', help='Epochs to wait before decreasing LR by a factor of 0.5 (default: 10)')
-parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large'], default='fb', help='Model arch according to input type')
+parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large', 'resnet_small'], default='fb', help='Model arch according to input type')
 parser.add_argument('--softmax', choices=['none', 'softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
@@ -87,6 +87,8 @@ elif args.model == 'inception_mfcc':
 	model = model_.inception_v3(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_large':
 	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
+elif args.model == 'resnet_small':
+	model = model_.ResNet_small(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax)
 
 if args.cuda:
 	model = model.cuda(device)

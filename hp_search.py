@@ -51,7 +51,7 @@ parser.add_argument('--batch-size', type=int, default=24, metavar='N', help='inp
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
-parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large'], default='fb', help='Model arch according to input type')
+parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large', 'resnet_small'], default='fb', help='Model arch according to input type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -90,6 +90,8 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 		model=model_.inception_v3(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax)
 	elif args.model == 'resnet_large':
 		model = model_.ResNet_large_lstm(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax)
+	elif args.model == 'resnet_small':
+		model = model_.ResNet_small(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax)
 
 	if cuda:
 		model=model.cuda(device)

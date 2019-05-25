@@ -729,6 +729,78 @@ class ResNet_stats(nn.Module):
 
 		return mu
 
+class ResNet_small(nn.Module):
+	def __init__(self, n_z=256, layers=[2,2,2,2], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
+		self.inplanes = 16
+		super(ResNet_small, self).__init__()
+
+		self.conv1 = nn.Conv2d(1, 16, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
+		self.bn1 = nn.BatchNorm2d(16)
+		self.activation = nn.ELU()
+		
+		self.layer1 = self._make_layer(block, 16, layers[0],stride=1)
+		self.layer2 = self._make_layer(block, 32, layers[1], stride=1)
+		self.layer3 = self._make_layer(block, 64, layers[2], stride=2)
+		self.layer4 = self._make_layer(block, 128, layers[3], stride=2)
+
+		self.fc = nn.Linear(2*512,512)
+		self.lbn = nn.BatchNorm1d(512)
+
+		self.fc_mu = nn.Linear(512, n_z)
+
+		self.initialize_params()
+
+		self.attention = SelfAttention(512)
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+	def initialize_params(self):
+
+		for layer in self.modules():
+			if isinstance(layer, torch.nn.Conv2d):
+				init.kaiming_normal_(layer.weight, a=0, mode='fan_out')
+			elif isinstance(layer, torch.nn.Linear):
+				init.kaiming_uniform_(layer.weight)
+			elif isinstance(layer, torch.nn.BatchNorm2d) or isinstance(layer, torch.nn.BatchNorm1d):
+				layer.weight.data.fill_(1)
+				layer.bias.data.zero_()
+
+	def _make_layer(self, block, planes, blocks, stride=1):
+		downsample = None
+		if stride != 1 or self.inplanes != planes * block.expansion:
+			downsample = nn.Sequential(nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False), nn.BatchNorm2d(planes * block.expansion) )
+
+		layers = []
+		layers.append(block(self.inplanes, planes, stride, downsample))
+		self.inplanes = planes * block.expansion
+		for i in range(1, blocks):
+			layers.append(block(self.inplanes, planes))
+
+		return nn.Sequential(*layers)
+
+	def forward(self, x):
+	
+		x = self.conv1(x)
+		x = self.activation(self.bn1(x))
+		x = self.layer1(x)
+		x = self.layer2(x)
+		x = self.layer3(x)
+		x = self.layer4(x)
+		x = x.squeeze(2)
+
+		stats = self.attention(x.permute(0,2,1).contiguous())
+
+		fc = F.elu(self.lbn(self.fc(stats)))
+
+		mu = self.fc_mu(fc)
+		return mu
+
 def inception_v3():
 	"""Inception v3 model architecture from
 	`"Rethinking the Inception Architecture for Computer Vision" <http://arxiv.org/abs/1512.00567>`_.
