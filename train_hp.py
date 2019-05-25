@@ -88,7 +88,7 @@ elif args.model == 'inception_mfcc':
 elif args.model == 'resnet_large':
 	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 elif args.model == 'resnet_small':
-	model = model_.ResNet_large_small(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.ResNet_small(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=args.softmax)
 
 if args.cuda:
 	model = model.cuda(device)
