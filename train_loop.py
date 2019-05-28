@@ -5,20 +5,10 @@ import numpy as np
 import pickle
 
 import os
-from glob import glob
-from tqdm import tqdm
 
 from utils.harvester import HardestNegativeTripletSelector
 
-from sklearn import metrics
-
-def compute_eer(y, y_score):
-	fpr, tpr, thresholds = metrics.roc_curve(y, y_score, pos_label=1)
-	fnr = 1 - tpr
-	eer_threshold = thresholds[np.nanargmin(np.abs(fnr-fpr))]
-	eer = fpr[np.nanargmin(np.abs(fnr-fpr))]
-
-	return eer
+from utils.utils import compute_eer
 
 class TrainLoop(object):
 

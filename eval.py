@@ -10,10 +10,7 @@ import pickle
 import os
 import sys
 
-def get_freer_gpu():
-	os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
-	memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
-	return torch.device('cuda:'+str(np.argmax(memory_available)))
+from utils.utils import *
 
 def prep_feats(data_, min_nb_frames=100):
 
@@ -25,35 +22,6 @@ def prep_feats(data_, min_nb_frames=100):
 		features = features[:, :min_nb_frames]
 
 	return torch.from_numpy(features[np.newaxis, np.newaxis, :, :]).float()
-
-def compute_metrics(y, y_score):
-	fpr, tpr, thresholds = metrics.roc_curve(y, y_score, pos_label=1)
-	fnr = 1 - tpr
-	eer_threshold = thresholds[np.nanargmin(np.abs(fnr-fpr))]
-	eer = fpr[np.nanargmin(np.abs(fnr-fpr))]
-
-	auc = metrics.auc(fpr, tpr)
-
-	avg_precision = metrics.average_precision_score(y, y_score)
-
-	pred = np.asarray([1 if score > eer_threshold else 0 for score in y_score])
-	acc = metrics.accuracy_score(y ,pred)
-
-	return eer, auc, avg_precision, acc, eer_threshold
-
-def read_trials(path):
-	with open(path, 'r') as file:
-		utt_labels = file.readlines()
-
-	enroll_utt_list, test_utt_list, labels_list = [], [], []
-
-	for line in utt_labels:
-		enroll_utt, test_utt, label = line.split(' ')
-		enroll_utt_list.append(enroll_utt)
-		test_utt_list.append(test_utt)
-		labels_list.append(1 if label=='target\n' else 0)
-
-	return enroll_utt_list, test_utt_list, labels_list
 
 if __name__ == '__main__':
 

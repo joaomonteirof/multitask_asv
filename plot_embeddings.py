@@ -1,9 +1,6 @@
 from __future__ import print_function
 import argparse
 import torch
-import torchvision
-import torch.utils.data
-from PIL import ImageFilter
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import matplotlib.cm as cm
@@ -16,22 +13,7 @@ import sys
 
 rcParams.update({'figure.autolayout': True})
 
-def get_freer_gpu():
-	os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
-	memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
-	return torch.device('cuda:'+str(np.argmax(memory_available)))
-
-def read_spk2utt(path):
-	with open(path, 'r') as file:
-		rows = file.readlines()
-
-	spk2utt_dict = {}
-
-	for row in rows:
-		spk_utts = row.replace('\n','').split(' ')
-		spk2utt_dict[spk_utts[0]] = spk_utts[1:]
-
-	return spk2utt_dict
+from utils.utils import *
 
 def compute_embeddings(model, spk2utt_, data_loader, n_speakers, cuda_mode, device):
 
