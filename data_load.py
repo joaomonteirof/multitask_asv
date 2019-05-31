@@ -7,6 +7,7 @@ import os
 import subprocess
 import shlex
 from numpy.lib.stride_tricks import as_strided
+from librosa.feature import delta
 
 def strided_app(a, L, S):
 	nrows = ( (len(a)-L) // S ) + 1
@@ -15,11 +16,12 @@ def strided_app(a, L, S):
 
 class Loader(Dataset):
 
-	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100):
+	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100, delta=False):
 		super(Loader, self).__init__()
 		self.hdf5_name = hdf5_name
 		self.n_cycles = n_cycles
 		self.max_nb_frames = int(max_nb_frames)
+		self.delta=delta
 
 		self.create_lists()
 
@@ -68,6 +70,9 @@ class Loader(Dataset):
 			data_ = np.tile(data, (1, 1, mul))
 			data_ = data_[:, :, :self.max_nb_frames]
 
+		if self.delta:
+			data_ = np.concatenate([data_, delta(a,width=3,order=1), delta(a,width=3,order=2)], axis=1)
+
 		return data_
 
 	def create_lists(self):
@@ -86,11 +91,12 @@ class Loader(Dataset):
 
 class Loader_softmax(Dataset):
 
-	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100):
+	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100, delta=False):
 		super(Loader_softmax, self).__init__()
 		self.hdf5_name = hdf5_name
 		self.n_cycles = n_cycles
 		self.max_nb_frames = int(max_nb_frames)
+		self.delta=delta
 
 		self.create_lists()
 
@@ -139,6 +145,9 @@ class Loader_softmax(Dataset):
 			data_ = np.tile(data, (1, 1, mul))
 			data_ = data_[:, :, :self.max_nb_frames]
 
+		if self.delta:
+			data_ = np.concatenate([data_, delta(a,width=3,order=1), delta(a,width=3,order=2)], axis=1)
+
 		return data_
 
 	def create_lists(self):
@@ -157,12 +166,13 @@ class Loader_softmax(Dataset):
 
 class Loader_mining(Dataset):
 
-	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100, examples_per_speaker=5):
+	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100, examples_per_speaker=5, delta=False):
 		super(Loader_mining, self).__init__()
 		self.hdf5_name = hdf5_name
 		self.n_cycles = n_cycles
 		self.max_nb_frames = int(max_nb_frames)
 		self.examples_per_speaker = int(examples_per_speaker)
+		self.delta=delta
 
 		self.create_lists()
 
@@ -183,6 +193,9 @@ class Loader_mining(Dataset):
 			idx = np.random.randint(len(utt_list))
 			utt = self.prep_utterance( self.open_file[speaker][utt_list[idx]] )
 			utterances.append( torch.from_numpy( utt ).float().contiguous() )
+
+		if self.delta:
+			data_ = np.concatenate([data_, delta(a,width=3,order=1), delta(a,width=3,order=2)], axis=1)
 
 		return torch.cat(utterances, 0).unsqueeze(1), torch.LongTensor(self.examples_per_speaker*[speaker_idx])
 
@@ -217,12 +230,13 @@ class Loader_mining(Dataset):
 
 class Loader_test(Dataset):
 
-	def __init__(self, hdf5_name, max_nb_frames, examples_per_speaker=5):
+	def __init__(self, hdf5_name, max_nb_frames, examples_per_speaker=5, delta=False):
 		super(Loader_test, self).__init__()
 		self.hdf5_name = hdf5_name
 		self.max_nb_frames = int(max_nb_frames)
 		self.examples_per_speaker = int(examples_per_speaker)
 		self.last_index = 0
+		self.delta=delta
 
 		self.create_lists()
 		self.set_maxlen_spklist()
@@ -296,6 +310,9 @@ class Loader_test(Dataset):
 			data_ = np.tile(data, (1, 1, mul))
 			data_ = data_[:, :, :self.max_nb_frames]
 
+		if self.delta:
+			data_ = np.concatenate([data_, delta(a,width=3,order=1), delta(a,width=3,order=2)], axis=1)
+
 		return data_
 
 	def create_lists(self):
@@ -314,11 +331,12 @@ class Loader_test(Dataset):
 
 class Loader_pretrain(Dataset):
 
-	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100):
+	def __init__(self, hdf5_name, max_nb_frames, n_cycles=100, delta=False):
 		super(Loader_pretrain, self).__init__()
 		self.hdf5_name = hdf5_name
 		self.n_cycles = n_cycles
 		self.max_nb_frames = int(max_nb_frames)
+		self.delta=delta
 
 		self.create_lists()
 
@@ -351,6 +369,9 @@ class Loader_pretrain(Dataset):
 			mul = int(np.ceil(self.max_nb_frames/data.shape[0]))
 			data_ = np.tile(data, (1, 1, mul))
 			data_ = data_[:, :, :self.max_nb_frames]
+
+		if self.delta:
+			data_ = np.concatenate([data_, delta(a,width=3,order=1), delta(a,width=3,order=2)], axis=1)
 
 		return data_
 

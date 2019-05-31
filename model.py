@@ -6,11 +6,11 @@ from utils.losses import AMSoftmax, Softmax
 
 
 class cnn_lstm_mfcc(nn.Module):
-	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none'):
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super(cnn_lstm_mfcc, self).__init__()
 
 		self.features = nn.Sequential(
-			nn.Conv2d(1, 32, kernel_size=(ncoef,3), padding=(0,2), stride=(1,1), bias=False),
+			nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), padding=(0,2), stride=(1,1), bias=False),
 			nn.BatchNorm2d(32),
 			nn.ELU(),
 			nn.Conv2d(32, 64, kernel_size=(1,5), padding=(0,1), stride=(1,2), bias=False),
@@ -381,11 +381,11 @@ class ResNet_fb(nn.Module):
 		return mu
 
 class ResNet_mfcc(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
+	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.inplanes = 32
 		super(ResNet_mfcc, self).__init__()
 
-		self.conv1 = nn.Conv2d(1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
+		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ELU()
 		
@@ -484,11 +484,11 @@ class ResNet_mfcc(nn.Module):
 		return out[out_index]
 
 class ResNet_lstm(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
+	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.inplanes = 32
 		super(ResNet_lstm, self).__init__()
 	
-		self.conv1 = nn.Conv2d(1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
+		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ELU()
 		
@@ -572,11 +572,11 @@ class ResNet_lstm(nn.Module):
 		return mu
 
 class ResNet_large_lstm(nn.Module):
-	def __init__(self, n_z=256, layers=[3,8,36,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
+	def __init__(self, n_z=256, layers=[3,8,36,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.inplanes = 32
 		super(ResNet_large_lstm, self).__init__()
 	
-		self.conv1 = nn.Conv2d(1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
+		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ELU()
 		
@@ -658,12 +658,12 @@ class ResNet_large_lstm(nn.Module):
 		return mu
 
 class ResNet_stats(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
-		self.inplanes = 16
+	def __init__(self, n_z=256, layers=[3,4,6,3], block=Bottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
+		self.inplanes = 32
 		super(ResNet_stats, self).__init__()
 	
-		self.conv1 = nn.Conv2d(1, 16, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(16)
+		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
+		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ELU()
 		
 		self.layer1 = self._make_layer(block, 16, layers[0],stride=1)
@@ -730,11 +730,11 @@ class ResNet_stats(nn.Module):
 		return mu
 
 class ResNet_small(nn.Module):
-	def __init__(self, n_z=256, layers=[2,2,2,2], block=BasicBlock, proj_size=0, ncoef=23, sm_type='none'):
+	def __init__(self, n_z=256, layers=[2,2,2,2], block=BasicBlock, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.inplanes = 16
 		super(ResNet_small, self).__init__()
 
-		self.conv1 = nn.Conv2d(1, 16, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
+		self.conv1 = nn.Conv2d(3 if delta else 1, 16, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(16)
 		self.activation = nn.ELU()
 		
@@ -823,9 +823,9 @@ class inception_v3(nn.Module):
 	Implementation adapted from: https://github.com/pytorch/vision/blob/master/torchvision/models/inception.py
 	"""
 
-	def __init__(self, n_z=256, block=Bottleneck, proj_size=0, ncoef=23, sm_type='none'):
+	def __init__(self, n_z=256, block=Bottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super(inception_v3, self).__init__()
-		self.Conv2d_1a_3x3 = BasicConv2d(1, 32, kernel_size=(ncoef,3), stride=2)
+		self.Conv2d_1a_3x3 = BasicConv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=2)
 		self.Conv1d_2a_3x3 = BasicConv1d(32, 32, kernel_size=3)
 		self.Conv1d_2b_3x3 = BasicConv1d(32, 64, kernel_size=3, padding=1)
 		self.Conv1d_3b_1x1 = BasicConv1d(64, 80, kernel_size=1)

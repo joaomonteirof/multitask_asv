@@ -28,6 +28,7 @@ parser.add_argument('--pretrained-path', type=str, default=None, metavar='Path',
 parser.add_argument('--train-hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
 parser.add_argument('--valid-hdf-file', type=str, default=None, metavar='Path', help='Path to hdf data')
 parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large', 'resnet_small'], default='fb', help='Model arch according to input type')
+parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 parser.add_argument('--save-every', type=int, default=1, metavar='N', help='how many epochs to wait before logging training status. Default is 1')
@@ -50,18 +51,18 @@ if args.cuda:
 	torch.cuda.manual_seed(args.seed)
 
 if args.pretrain:
-	train_dataset = Loader_pretrain(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
+	train_dataset = Loader_pretrain(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles, delta=args.delta)
 elif args.mine_triplets:
-	train_dataset = Loader_mining(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
+	train_dataset = Loader_mining(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles, delta=args.delta)
 elif args.softmax!='none':
-	train_dataset = Loader_softmax(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
+	train_dataset = Loader_softmax(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles, delta=args.delta)
 else:
-	train_dataset = Loader(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles)
+	train_dataset = Loader(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.n_cycles, delta=args.delta)
 
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, worker_init_fn=set_np_randomseed)
 
 if args.valid_hdf_file is not None:
-	valid_dataset = Loader(hdf5_name = args.valid_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.valid_n_cycles)
+	valid_dataset = Loader(hdf5_name = args.valid_hdf_file, max_nb_frames = args.n_frames, n_cycles=args.valid_n_cycles, delta=args.delta)
 	valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, worker_init_fn=set_np_randomseed)
 else:
 	valid_loader=None
@@ -72,23 +73,23 @@ else:
 	device = None
 
 if args.model == 'mfcc':
-	model = model_.cnn_lstm_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.cnn_lstm_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'fb':
 	model = model_.cnn_lstm_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, sm_type=args.softmax)
 elif args.model == 'resnet_fb':
 	model = model_.ResNet_fb(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, sm_type=args.softmax)
 elif args.model == 'resnet_mfcc':
-	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'resnet_lstm':
-	model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'resnet_stats':
-	model = model_.ResNet_stats(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.ResNet_stats(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'inception_mfcc':
-	model = model_.inception_v3(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.inception_v3(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'resnet_large':
-	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.ResNet_large_lstm(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'resnet_small':
-	model = model_.ResNet_small(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax)
+	model = model_.ResNet_small(n_z=args.latent_size, proj_size=len(train_dataset.speakers_list) if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 
 if args.pretrained_path is not None:
 	ckpt = torch.load(args.pretrained_path, map_location = lambda storage, loc: storage)
@@ -124,6 +125,7 @@ if args.verbose >0:
 	print('Margin: {}'.format(args.margin))
 	print('Swap: {}'.format(args.swap))
 	print('Patience: {}'.format(args.patience))
+	print('Delta features: {}'.format(args.delta))
 	print(' ')
 
 trainer.train(n_epochs=args.epochs, save_every=args.save_every)

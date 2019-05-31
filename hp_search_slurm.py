@@ -64,12 +64,12 @@ parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path',
 args=parser.parse_args()
 args.cuda=True if not args.no_cuda else False
 
-def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, slurm_submission_file, tmp_dir, cp_path, softmax):
+def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, slurm_submission_file, tmp_dir, cp_path, softmax, delta):
 
 	file_name = get_file_name(tmp_dir)
 	np.random.seed()
 
-	command = 'sbatch' + ' ' + slurm_submission_file + ' ' + str(lr) + ' ' + str(l2) + ' ' + str(momentum) + ' ' + str(margin) + ' ' + str(lambda_) + ' ' + str(int(patience)) + ' ' + str(swap) + ' ' + str(int(latent_size)) + ' ' + str(int(n_frames)) + ' ' + str(model) + ' ' + str(ncoef) + ' ' + str(epochs) + ' ' + str(batch_size) + ' ' + str(n_workers) + ' ' + str(cuda) + ' ' + str(train_hdf_file) + ' ' + str(valid_hdf_file) + ' ' + str(n_cycles) + ' ' + str(valid_n_cycles) + ' ' + str(file_name) + ' ' + str(cp_path) + ' ' + str(file_name.split('/')[-1]+'t') + ' ' + str(softmax)
+	command = 'sbatch' + ' ' + slurm_submission_file + ' ' + str(lr) + ' ' + str(l2) + ' ' + str(momentum) + ' ' + str(margin) + ' ' + str(lambda_) + ' ' + str(int(patience)) + ' ' + str(swap) + ' ' + str(int(latent_size)) + ' ' + str(int(n_frames)) + ' ' + str(model) + ' ' + str(ncoef) + ' ' + str(epochs) + ' ' + str(batch_size) + ' ' + str(n_workers) + ' ' + str(cuda) + ' ' + str(train_hdf_file) + ' ' + str(valid_hdf_file) + ' ' + str(n_cycles) + ' ' + str(valid_n_cycles) + ' ' + str(file_name) + ' ' + str(cp_path) + ' ' + str(file_name.split('/')[-1]+'t') + ' ' + str(softmax) + ' ' + str(delta)
 
 	for j in range(10):
 
@@ -94,6 +94,7 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 			print('Best EER in result file ' + file_name.split('/')[-1].split('.p')[0] + ' was: {}'.format(result))
 			print(' ')
 			print('With hyperparameters:')
+			print('N frames: {}'.format(int(n_frames)))
 			print('Embeddings size: {}'.format(int(latent_size)))
 			print('LR: {}'.format(lr))
 			print('momentum: {}'.format(momentum))
@@ -103,6 +104,7 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 			print('Swap: {}'.format(swap))
 			print('Patience: {}'.format(int(patience)))
 			print('Softmax Mode: {}'.format(softmax))
+			print('Delta features: {}'.format(delta))
 			print(' ')
 
 			return result
@@ -131,13 +133,14 @@ valid_n_cycles=args.valid_n_cycles
 sge_sub_file=args.sge_sub_file
 checkpoint_path=args.checkpoint_path
 softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
+delta=instru.var.OrderedDiscrete([True, False])
 
 tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 
 if not os.path.isdir(tmp_dir):
 	os.mkdir(tmp_dir)
 
-instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, sge_sub_file, tmp_dir, checkpoint_path, softmax)
+instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, sge_sub_file, tmp_dir, checkpoint_path, softmax, delta)
 
 hp_optimizer=optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
 
