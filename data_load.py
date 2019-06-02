@@ -71,7 +71,7 @@ class Loader(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=1)
+			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
 
 		return data_
 
@@ -146,7 +146,7 @@ class Loader_softmax(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=1)
+			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
 
 		return data_
 
@@ -210,7 +210,7 @@ class Loader_mining(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=1)
+			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
 
 		return data_
 
@@ -311,7 +311,7 @@ class Loader_test(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=1)
+			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
 
 		return data_
 
@@ -371,7 +371,7 @@ class Loader_pretrain(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=1)
+			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
 
 		return data_
 
