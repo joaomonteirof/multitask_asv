@@ -240,13 +240,13 @@ class TrainLoop(object):
 		utt = utt[:,:,:,:ridx]
 
 		if self.cuda_mode:
-			utt, y = utt.cuda(self.device), y.cuda(self.device)
+			utt, y = utt.cuda(self.device), y.cuda(self.device).squeeze()
 
 		embeddings = self.model.forward(utt)
 
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
-		loss = F.cross_entropy(self.model.out_proj(embeddings_norm), y.squeeze())
+		loss = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
 
 		loss.backward()
 		self.optimizer.step()
