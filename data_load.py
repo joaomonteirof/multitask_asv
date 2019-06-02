@@ -194,9 +194,6 @@ class Loader_mining(Dataset):
 			utt = self.prep_utterance( self.open_file[speaker][utt_list[idx]] )
 			utterances.append( torch.from_numpy( utt ).float().contiguous() )
 
-		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=1)
-
 		return torch.cat(utterances, 0).unsqueeze(1), torch.LongTensor(self.examples_per_speaker*[speaker_idx])
 
 	def __len__(self):
@@ -211,6 +208,9 @@ class Loader_mining(Dataset):
 			mul = int(np.ceil(self.max_nb_frames/data.shape[0]))
 			data_ = np.tile(data, (1, 1, mul))
 			data_ = data_[:, :, :self.max_nb_frames]
+
+		if self.delta:
+			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=1)
 
 		return data_
 
