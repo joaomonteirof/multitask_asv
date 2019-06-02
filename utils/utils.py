@@ -12,7 +12,7 @@ def set_np_randomseed(worker_id):
 	np.random.seed(np.random.get_state()[1][0]+worker_id)
 
 def get_freer_gpu(trials=10):
-	sleep(5)
+	sleep(20)
 	for j in range(trials):
 		os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
 		memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
