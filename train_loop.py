@@ -69,7 +69,7 @@ class TrainLoop(object):
 
 			train_loss_epoch=0.0
 
-			if self.softmax:
+			if self.softmax and not self.pretrain:
 
 				ce_epoch=0.0
 				for t, batch in train_iter:
