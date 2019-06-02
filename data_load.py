@@ -194,7 +194,7 @@ class Loader_mining(Dataset):
 			utt = self.prep_utterance( self.open_file[speaker][utt_list[idx]] )
 			utterances.append( torch.from_numpy( utt ).float().contiguous() )
 
-		return torch.cat(utterances.unsqueeze(1), 0), torch.LongTensor(self.examples_per_speaker*[speaker_idx])
+		return torch.cat(utterances, 0), torch.LongTensor(self.examples_per_speaker*[speaker_idx])
 
 	def __len__(self):
 		return len(self.speakers_list)*self.n_cycles
@@ -211,6 +211,8 @@ class Loader_mining(Dataset):
 
 		if self.delta:
 			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
+
+		data_ = np.expand_dims(data_, axis=0)
 
 		return data_
 
@@ -266,7 +268,7 @@ class Loader_test(Dataset):
 
 		self.last_index = index
 
-		return torch.cat(utterances.unsqueeze(1), 0), torch.LongTensor(self.examples_per_speaker*[speaker_idx])
+		return torch.cat(utterances, 0), torch.LongTensor(self.examples_per_speaker*[speaker_idx])
 
 	def __len__(self):
 		return len(self.speakers_list)*len(self.indices[self.speakers_list[0]])
@@ -312,6 +314,8 @@ class Loader_test(Dataset):
 
 		if self.delta:
 			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
+
+		data_ = np.expand_dims(data_, axis=0)
 
 		return data_
 
