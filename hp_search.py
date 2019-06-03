@@ -35,7 +35,7 @@ parser.add_argument('--batch-size', type=int, default=24, metavar='N', help='inp
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
-parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large', 'resnet_small'], default='fb', help='Model arch according to input type')
+parser.add_argument('--model', choices=['mfcc', 'fb', 'resnet_fb', 'resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large', 'resnet_small', 'all'], default='fb', help='Model arch according to input type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -98,7 +98,7 @@ patience=instru.var.Array(1).asfloat().bounded(1, 100)
 swap=instru.var.OrderedDiscrete([True, False])
 latent_size=instru.var.Array(1).asfloat().bounded(64, 512)
 n_frames=instru.var.Array(1).asfloat().bounded(600, 1000)
-model=args.model
+model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large', 'resnet_small']) if args.model=='all' else args.model
 ncoef=args.ncoef
 epochs=args.epochs
 batch_size=args.batch_size

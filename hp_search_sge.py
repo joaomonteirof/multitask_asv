@@ -128,7 +128,7 @@ patience=instru.var.Array(1).asfloat().bounded(1, 100)
 swap=instru.var.OrderedDiscrete([True, False])
 latent_size=instru.var.Array(1).asfloat().bounded(64, 512)
 n_frames=instru.var.Array(1).asfloat().bounded(600, 1000)
-model=args.model
+model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'inception_mfcc', 'resnet_large', 'resnet_small', 'all']) if args.model=='all' else args.model
 ncoef=args.ncoef
 epochs=args.epochs
 batch_size=args.batch_size
