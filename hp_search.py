@@ -59,22 +59,14 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 	valid_dataset = Loader(hdf5_name = valid_hdf_file, max_nb_frames = int(n_frames), n_cycles=valid_n_cycles, delta=delta)
 	valid_loader=torch.utils.data.DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, num_workers=n_workers, worker_init_fn=set_np_randomseed)
 
-	if model == 'mfcc':
-		model=model_.cnn_lstm_mfcc(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax, delta=delta)
-	elif model == 'fb':
-		model=model_.cnn_lstm_fb(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), sm_type=softmax)
-	elif model == 'resnet_fb':
-		model=model_.ResNet_fb(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), sm_type=softmax)
-	elif model == 'resnet_mfcc':
+	if model == 'resnet_mfcc':
 		model=model_.ResNet_mfcc(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax, delta=delta)
 	elif model == 'resnet_lstm':
 		model=model_.ResNet_lstm(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax, delta=delta)
 	elif model == 'resnet_stats':
 		model=model_.ResNet_stats(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax, delta=delta)
-	elif model == 'inception_mfcc':
-		model=model_.inception_v3(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'resnet_large':
-		model = model_.ResNet_large_lstm(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax, delta=delta)
+		model = model_.ResNet_large(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'resnet_small':
 		model = model_.ResNet_small(n_z=int(latent_size), proj_size=len(train_dataset.speakers_list), ncoef=args.ncoef, sm_type=softmax, delta=delta)
 
