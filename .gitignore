@@ -15,8 +15,8 @@
 *.csh
 *.awk
 */data/*
-*/__pycache__/*
-*/tmp*
+*__pycache__*
+*tmp*
 *cifar-10-batches-py*
 *t10k-images-idx3-ubyte*
 *t10k-labels-idx1-ubyte*
