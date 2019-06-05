@@ -280,7 +280,7 @@ class ResNet_lstm(nn.Module):
 		return mu
 
 class ResNet_large(nn.Module):
-	def __init__(self, n_z=256, layers=[3,8,36,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
+	def __init__(self, n_z=256, layers=[3,4,23,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.in_planes = 32
 		super(ResNet_large, self).__init__()
 	
