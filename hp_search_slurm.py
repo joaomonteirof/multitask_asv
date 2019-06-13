@@ -94,6 +94,7 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 			print('Best EER in result file ' + file_name.split('/')[-1].split('.p')[0] + ' was: {}'.format(result))
 			print(' ')
 			print('With hyperparameters:')
+			print('Model: {}'.format(model))
 			print('N frames: {}'.format(int(n_frames)))
 			print('Embeddings size: {}'.format(int(latent_size)))
 			print('LR: {}'.format(lr))
