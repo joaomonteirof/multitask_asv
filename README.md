@@ -16,7 +16,7 @@ h5py
 
 Data preparation scripts are provided and features in [Kaldi](https://kaldi-asr.org/) format are exepected.
 
-Pre-processed data will consist of hdf files such that features for each recording are stored as datasets of shape [1, nfeat, nframes].
+Pre-processed data will consist of hdf files such that features for each recording are stored as datasets of shape [1, nfeat, nframes] and further stored under a group labeled with the speaker ID.
 
 Prepare Kaldi features with data_prep.py. Arguments:
 
