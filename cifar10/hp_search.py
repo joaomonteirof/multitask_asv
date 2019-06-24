@@ -43,8 +43,8 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batc
 
 	cp_name = get_cp_name(checkpoint_path)
 
-	transform_train = transforms.Compose([transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.ToTensor(),])
-	transform_test = transforms.ToTensor()
+	transform_train = transforms.Compose([transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize([x / 255 for x in [125.3, 123.0, 113.9]], [x / 255 for x in [63.0, 62.1, 66.7]])])
+	transform_test = transforms.Compose([transforms.ToTensor(), transforms.Normalize([x / 255 for x in [125.3, 123.0, 113.9]], [x / 255 for x in [63.0, 62.1, 66.7]])])
 
 	#trainset = Loader(data_path)
 	trainset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
