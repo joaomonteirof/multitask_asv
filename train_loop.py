@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 import os
 
-from utils.harvester import HardestNegativeTripletSelector
+from utils.harvester import HardestNegativeTripletSelector, AllTripletSelector
 
 from utils.utils import compute_eer
 
@@ -35,7 +35,8 @@ class TrainLoop(object):
 		self.total_iters = 0
 		self.cur_epoch = 0
 		self.margin = margin
-		self.harvester = HardestNegativeTripletSelector(margin=self.margin, cpu=not self.cuda_mode)
+		self.harvester_mine = HardestNegativeTripletSelector(margin=self.margin, cpu=not self.cuda_mode)
+		self.harvester_all = AllTripletSelector
 		self.verbose = verbose
 		self.save_cp = save_cp
 		self.device = device
@@ -59,6 +60,7 @@ class TrainLoop(object):
 		while (self.cur_epoch < n_epochs):
 
 			np.random.seed()
+			self.train_loader.dataset.update_lists()
 
 			if self.verbose>0:
 				print(' ')
@@ -161,51 +163,31 @@ class TrainLoop(object):
 		self.model.train()
 		self.optimizer.zero_grad()
 
-		if self.mining:
-			utterances, y = batch
-			utterances.resize_(utterances.size(0)*utterances.size(1), utterances.size(2), utterances.size(3), utterances.size(4))
-			y.resize_(y.numel())
-		elif self.softmax:
-			utt_a, utt_p, utt_n, y = batch
-		else:
-			utt_a, utt_p, utt_n = batch
+		utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
+		utterances = torch.stack([utt_1, utt_2, utt_3, utt_4, utt_5], 0)
 
 		entropy_indices = None
 
+		ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
+		utterances = utterances[:,:,:,:ridx]
+
+		if self.cuda_mode:
+			utterances = utterances.cuda(self.device)
+
+		embeddings = self.model.forward(utterances)
+		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+
 		if self.mining:
-
-			ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
-			utterances = utterances[:,:,:,:ridx]
-			if self.cuda_mode:
-				utterances = utterances.cuda(self.device)
-
-			embeddings = self.model.forward(utterances)
-
-			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
-
-			triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
-
-			if self.cuda_mode:
-				triplets_idx = triplets_idx.cuda(self.device)
-
-			emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
-			emb_p = torch.index_select(embeddings_norm, 0, triplets_idx[:, 1])
-			emb_n = torch.index_select(embeddings_norm, 0, triplets_idx[:, 2])
-
+			triplets_idx, entropy_indices = self.harvester_mine.get_triplets(embeddings_norm.detach(), y)
 		else:
-			ridx = np.random.randint(utt_a.size(3)//4, utt_a.size(3))
-			utt_a, utt_p, utt_n = utt_a[:,:,:,:ridx], utt_p[:,:,:,:ridx], utt_n[:,:,:,:ridx]
+			triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
 
-			if self.cuda_mode:
-				utt_a, utt_p, utt_n = utt_a.cuda(self.device), utt_p.cuda(self.device), utt_n.cuda(self.device)
+		if self.cuda_mode:
+			triplets_idx = triplets_idx.cuda(self.device)
 
-			emb_a, emb_p, emb_n = self.model.forward(utt_a), self.model.forward(utt_p), self.model.forward(utt_n)
-
-			emb_a = torch.div(emb_a, torch.norm(emb_a, 2, 1).unsqueeze(1).expand_as(emb_a))
-			emb_p = torch.div(emb_p, torch.norm(emb_p, 2, 1).unsqueeze(1).expand_as(emb_p))
-			emb_n = torch.div(emb_n, torch.norm(emb_n, 2, 1).unsqueeze(1).expand_as(emb_n))
-
-			embeddings_norm = F.normalize(emb_a, p=2, dim=1)
+		emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
+		emb_p = torch.index_select(embeddings_norm, 0, triplets_idx[:, 1])
+		emb_n = torch.index_select(embeddings_norm, 0, triplets_idx[:, 2])
 
 		loss = self.triplet_loss(emb_a, emb_p, emb_n)
 
@@ -234,16 +216,16 @@ class TrainLoop(object):
 		self.model.train()
 		self.optimizer.zero_grad()
 
-		utt, y = batch
+		utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
+		utterances = torch.stack([utt_1, utt_2, utt_3, utt_4, utt_5], 0)
 
-		ridx = np.random.randint(utt.size(3)//2, utt.size(3))
-		utt = utt[:,:,:,:ridx]
+		ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
+		utterances = utterances[:,:,:,:ridx]
 
 		if self.cuda_mode:
-			utt, y = utt.cuda(self.device), y.cuda(self.device).squeeze()
+			utterances = utterances.cuda(self.device)
 
-		embeddings = self.model.forward(utt)
-
+		embeddings = self.model.forward(utterances)
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
 		loss = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
@@ -259,20 +241,26 @@ class TrainLoop(object):
 
 		with torch.no_grad():
 
-			xa, xp, xn = batch
+			utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
+			utterances = torch.stack([utt_1, utt_2, utt_3, utt_4, utt_5], 0)
 
-			ridx = np.random.randint(xa.size(3)//2, xa.size(3))
-
-			xa, xp, xn = xa[:,:,:,:ridx], xp[:,:,:,:ridx], xn[:,:,:,:ridx]
+			ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
+			utterances = utterances[:,:,:,:ridx]
 
 			if self.cuda_mode:
-				xa = xa.contiguous().cuda(self.device)
-				xp = xp.contiguous().cuda(self.device)
-				xn = xn.contiguous().cuda(self.device)
+				utterances = utterances.cuda(self.device)
 
-			emb_a = self.model.forward(xa)
-			emb_p = self.model.forward(xp)
-			emb_n = self.model.forward(xn)
+			embeddings = self.model.forward(utterances)
+			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+
+			triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
+
+			if self.cuda_mode:
+				triplets_idx = triplets_idx.cuda(self.device)
+
+			emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
+			emb_p = torch.index_select(embeddings_norm, 0, triplets_idx[:, 1])
+			emb_n = torch.index_select(embeddings_norm, 0, triplets_idx[:, 2])
 
 			scores_p = torch.nn.functional.cosine_similarity(emb_a, emb_p)
 			scores_n = torch.nn.functional.cosine_similarity(emb_a, emb_n)

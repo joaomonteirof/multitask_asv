@@ -53,6 +53,7 @@ def check_job_running(id_):
 # Training settings
 parser=argparse.ArgumentParser(description='HP search for ASV')
 parser.add_argument('--batch-size', type=int, default=24, metavar='N', help='input batch size for training (default: 24)')
+parser.add_argument('--valid-batch-size', type=int, default=64, metavar='N', help='input batch size for valid (default: 64)')
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
@@ -65,19 +66,17 @@ parser.add_argument('--hp-workers', type=int, help='number of search workers', d
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 parser.add_argument('--save-every', type=int, default=1, metavar='N', help='how many epochs to wait before logging training status. Default is 1')
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
-parser.add_argument('--n-cycles', type=int, default=3, metavar='N', help='cycles over speakers list to complete 1 epoch')
-parser.add_argument('--valid-n-cycles', type=int, default=300, metavar='N', help='cycles over speakers list to complete 1 epoch')
 parser.add_argument('--temp-folder', type=str, default='temp', metavar='Path', help='Temp folder for pickle files')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
 args=parser.parse_args()
 args.cuda=True if not args.no_cuda else False
 
-def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, sge_submission_file, tmp_dir, cp_path, softmax, delta):
+def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, sge_submission_file, tmp_dir, cp_path, softmax, delta):
 
 	file_name = get_file_name(tmp_dir)
 	np.random.seed()
 
-	command = 'qsub' + ' ' + sge_submission_file + ' ' + str(lr) + ' ' + str(l2) + ' ' + str(momentum) + ' ' + str(margin) + ' ' + str(lambda_) + ' ' + str(int(patience)) + ' ' + str(swap) + ' ' + str(int(latent_size)) + ' ' + str(int(n_frames)) + ' ' + str(model) + ' ' + str(ncoef) + ' ' + str(epochs) + ' ' + str(batch_size) + ' ' + str(n_workers) + ' ' + str(cuda) + ' ' + str(train_hdf_file) + ' ' + str(valid_hdf_file) + ' ' + str(n_cycles)+ ' ' + str(valid_n_cycles) + ' ' + str(file_name) + ' ' + str(cp_path) + ' ' + str(file_name.split('/')[-1]+'t') + ' ' + str(softmax) + ' ' + str(delta)
+	command = 'qsub' + ' ' + sge_submission_file + ' ' + str(lr) + ' ' + str(l2) + ' ' + str(momentum) + ' ' + str(margin) + ' ' + str(lambda_) + ' ' + str(int(patience)) + ' ' + str(swap) + ' ' + str(int(latent_size)) + ' ' + str(int(n_frames)) + ' ' + str(model) + ' ' + str(ncoef) + ' ' + str(epochs) + ' ' + str(batch_size) + ' ' + str(valid_batch_size) + ' ' + str(n_workers) + ' ' + str(cuda) + ' ' + str(train_hdf_file) + ' ' + str(valid_hdf_file) + ' ' + str(file_name) + ' ' + str(cp_path) + ' ' + str(file_name.split('/')[-1]+'t') + ' ' + str(softmax) + ' ' + str(delta)
 
 	for j in range(10):
 
@@ -133,12 +132,11 @@ model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 
 ncoef=args.ncoef
 epochs=args.epochs
 batch_size=args.batch_size
+valid_batch_size=args.valid_batch_size
 n_workers=args.workers
 cuda=args.cuda
 train_hdf_file=args.train_hdf_file
 valid_hdf_file=args.valid_hdf_file
-n_cycles=args.n_cycles
-valid_n_cycles=args.valid_n_cycles
 sge_sub_file=args.sge_sub_file
 checkpoint_path=args.checkpoint_path
 softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
@@ -149,7 +147,7 @@ tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 if not os.path.isdir(tmp_dir):
 	os.mkdir(tmp_dir)
 
-instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, sge_sub_file, tmp_dir, checkpoint_path, softmax, delta)
+instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, sge_sub_file, tmp_dir, checkpoint_path, softmax, delta)
 
 hp_optimizer=optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
 

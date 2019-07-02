@@ -1,15 +1,14 @@
 import numpy as np
 from sklearn import metrics
-
 import torch
-
+from numpy.lib.stride_tricks import as_strided
 import os
 import sys
 import pickle
 from time import sleep
 
 def set_np_randomseed(worker_id):
-	np.random.seed(np.random.get_state()[1][0]+worker_id)
+	np.random.seed(np.random.get_state()[1][0])
 
 def get_freer_gpu(trials=10):
 	sleep(20)
@@ -25,6 +24,11 @@ def get_freer_gpu(trials=10):
 
 	print('NO GPU AVAILABLE!!!')
 	exit(1)
+
+def strided_app(a, L, S):
+	nrows = ( (len(a)-L) // S ) + 1
+	n = a.strides[0]
+	return as_strided(a, shape=(nrows, L), strides=(S*n,n))
 
 def compute_eer(y, y_score):
 	fpr, tpr, thresholds = metrics.roc_curve(y, y_score, pos_label=1)
