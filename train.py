@@ -110,6 +110,10 @@ if args.verbose >0:
 	print('Patience: {}'.format(args.patience))
 	print('Delta features: {}'.format(args.delta))
 	print('Max input length: {}'.format(args.n_frames))
+	print('Number of train speakers: {}'.format(train_dataset.n_speakers))
+	print('Number of train examples: {}'.format(len(train_dataset.utt_list)))
+	print('Number of valid speakers: {}'.format(valid_dataset.n_speakers))
+	print('Number of valid examples: {}'.format(len(valid_dataset.utt_list)))
 	print(' ')
 
 trainer.train(n_epochs=args.epochs, save_every=args.save_every)
