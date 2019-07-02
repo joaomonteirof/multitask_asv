@@ -25,3 +25,4 @@
 *.p
 *.txt
 *.pyc
+*python-36.pyc*
