@@ -73,6 +73,23 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, we
 
 trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda)
 
+print('Cuda Mode: {}'.format(args.cuda))
+print('Softmax Mode: {}'.format(args.softmax))
+print('Selected model: {}'.format(args.model))
+print('Embeddings size: {}'.format(args.latent_size))
+print('Batch size: {}'.format(args.batch_size))
+print('LR: {}'.format(args.lr))
+print('momentum: {}'.format(args.momentum))
+print('l2: {}'.format(args.l2))
+print('lambda: {}'.format(args.lamb))
+print('Margin: {}'.format(args.margin))
+print('Swap: {}'.format(args.swap))
+print('Patience: {}'.format(args.patience))
+print('Delta features: {}'.format(args.delta))
+print('Max input length: {}'.format(args.n_frames))
+print('Number of CCs: {}'.format(args.ncoef))
+print(' ')
+
 best_eer = trainer.train(n_epochs=args.epochs, save_every=args.epochs+10)
 
 out_file = open(args.out_file, 'wb')

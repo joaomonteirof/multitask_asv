@@ -118,6 +118,7 @@ if args.verbose >0:
 	print('Swap: {}'.format(args.swap))
 	print('Patience: {}'.format(args.patience))
 	print('Delta features: {}'.format(args.delta))
+	print('Max input length: {}'.format(args.n_frames))
 	print(' ')
 
 trainer.train(n_epochs=args.epochs, save_every=args.save_every)
