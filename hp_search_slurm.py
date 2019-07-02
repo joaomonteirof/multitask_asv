@@ -131,7 +131,7 @@ train_hdf_file=args.train_hdf_file
 valid_hdf_file=args.valid_hdf_file
 n_cycles=args.n_cycles
 valid_n_cycles=args.valid_n_cycles
-sge_sub_file=args.sge_sub_file
+slurm_sub_file=args.slurm_sub_file
 checkpoint_path=args.checkpoint_path
 softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
 delta=instru.var.OrderedDiscrete([True, False])
@@ -141,7 +141,7 @@ tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 if not os.path.isdir(tmp_dir):
 	os.mkdir(tmp_dir)
 
-instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, sge_sub_file, tmp_dir, checkpoint_path, softmax, delta)
+instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, n_cycles, valid_n_cycles, slurm_sub_file, tmp_dir, checkpoint_path, softmax, delta)
 
 hp_optimizer=optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
 
