@@ -1,6 +1,5 @@
 *.tar
 *.tar.gz
-*.pyc
 *.pil
 *.pt
 *.txt
@@ -26,3 +25,6 @@
 *.txt
 *.pyc
 *python-36.pyc*
+*.hdf
+*.err
+*.out

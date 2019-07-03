@@ -86,7 +86,7 @@ if args.pretrained_path is not None:
 		raise
 
 if args.cuda:
-	model = model.cuda(device)
+	model = model.to(device)
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2)
 

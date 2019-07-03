@@ -70,7 +70,7 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 		model = model_.ResNet_small(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 
 	if cuda:
-		model=model.cuda(device)
+		model=model.to(device)
 	else:
 		device=None
 

@@ -36,7 +36,7 @@ class TrainLoop(object):
 		self.cur_epoch = 0
 		self.margin = margin
 		self.harvester_mine = HardestNegativeTripletSelector(margin=self.margin, cpu=not self.cuda_mode)
-		self.harvester_all = AllTripletSelector
+		self.harvester_all = AllTripletSelector()
 		self.verbose = verbose
 		self.save_cp = save_cp
 		self.device = device
@@ -103,7 +103,6 @@ class TrainLoop(object):
 					print('Train loss: {:0.4f}'.format(self.history['train_loss'][-1]))
 
 			else:
-
 				for t, batch in train_iter:
 					train_loss = self.train_step(batch)
 					self.history['train_loss_batch'].append(train_loss)
@@ -164,7 +163,8 @@ class TrainLoop(object):
 		self.optimizer.zero_grad()
 
 		utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
-		utterances = torch.stack([utt_1, utt_2, utt_3, utt_4, utt_5], 0)
+		utterances = torch.cat([utt_1, utt_2, utt_3, utt_4, utt_5], dim=0)
+		y = torch.cat(5*[y], dim=0).squeeze()
 
 		entropy_indices = None
 
@@ -172,7 +172,8 @@ class TrainLoop(object):
 		utterances = utterances[:,:,:,:ridx]
 
 		if self.cuda_mode:
-			utterances = utterances.cuda(self.device)
+			utterances = utterances.to(self.device)
+			y = y.to(self.device)
 
 		embeddings = self.model.forward(utterances)
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
@@ -183,7 +184,7 @@ class TrainLoop(object):
 			triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
 
 		if self.cuda_mode:
-			triplets_idx = triplets_idx.cuda(self.device)
+			triplets_idx = triplets_idx.to(self.device)
 
 		emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
 		emb_p = torch.index_select(embeddings_norm, 0, triplets_idx[:, 1])
@@ -198,9 +199,6 @@ class TrainLoop(object):
 			loss -= entropy_regularizer*self.lambda_
 
 		if self.softmax:
-			if self.cuda_mode:
-				y = y.cuda(self.device).squeeze()
-
 			ce = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
 			loss += ce
 			loss.backward()
@@ -217,13 +215,15 @@ class TrainLoop(object):
 		self.optimizer.zero_grad()
 
 		utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
-		utterances = torch.stack([utt_1, utt_2, utt_3, utt_4, utt_5], 0)
+		utterances = torch.cat([utt_1, utt_2, utt_3, utt_4, utt_5], dim=0)
+		y = torch.cat(5*[y], dim=0).squeeze()
 
 		ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
 		utterances = utterances[:,:,:,:ridx]
 
 		if self.cuda_mode:
-			utterances = utterances.cuda(self.device)
+			utterances = utterances.to(self.device)
+			y = y.to(self.device)
 
 		embeddings = self.model.forward(utterances)
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
@@ -242,13 +242,15 @@ class TrainLoop(object):
 		with torch.no_grad():
 
 			utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
-			utterances = torch.stack([utt_1, utt_2, utt_3, utt_4, utt_5], 0)
+			utterances = torch.cat([utt_1, utt_2, utt_3, utt_4, utt_5], dim=0)
+			y = torch.cat(5*[y], dim=0).squeeze()
 
 			ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
 			utterances = utterances[:,:,:,:ridx]
 
 			if self.cuda_mode:
-				utterances = utterances.cuda(self.device)
+				utterances = utterances.to(self.device)
+				y = y.to(self.device)
 
 			embeddings = self.model.forward(utterances)
 			embeddings_norm = F.normalize(embeddings, p=2, dim=1)

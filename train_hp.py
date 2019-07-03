@@ -65,7 +65,7 @@ elif args.model == 'resnet_small':
 	model = model_.ResNet_small(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 
 if args.cuda:
-	model = model.cuda(device)
+	model = model.to(device)
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2)
 
