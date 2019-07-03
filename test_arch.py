@@ -9,7 +9,7 @@ import model as model_
 
 # Training settings
 parser = argparse.ArgumentParser(description='Test new architectures')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large', 'resnet_small', 'all'], default='fb', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large', 'resnet_small', 'all'], default='all', help='Model arch according to input type')
 parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
