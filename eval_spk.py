@@ -48,7 +48,7 @@ if __name__ == '__main__':
 	parser.add_argument('--spk2utt', type=str, default='./data/spk2utt', metavar='Path', help='Path to enrollment spk2utt file')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
-	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large'], default='fb', help='Model arch according to input type')
+	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
@@ -70,6 +70,10 @@ if __name__ == '__main__':
 		model = model_.ResNet_stats(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
 	elif args.model == 'resnet_large':
 		model = model_.ResNet_large(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+	elif args.model == 'resnet_small':
+		model = model_.ResNet_small(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+	elif args.model == 'se_resnet':
+		model = model_.SE_ResNet(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
 
 	ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 	model.load_state_dict(ckpt['model_state'], strict=False)
