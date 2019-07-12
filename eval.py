@@ -9,7 +9,7 @@ import glob
 import pickle
 import os
 import sys
-
+from transformer_encoder import *
 from utils.utils import *
 
 def prep_feats(data_, min_nb_frames=100):
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 	parser.add_argument('--trials-path', type=str, default='./data/trials', metavar='Path', help='Path to trials file')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
-	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN'], default='resnet_mfcc', help='Model arch according to input type')
+	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--scores-path', type=str, default='./scores.p', metavar='Path', help='Path for saving computed scores')
 	parser.add_argument('--read-scores', action='store_true', default=False, help='If set, reads precomputed scores at --scores-path')
@@ -70,6 +70,8 @@ if __name__ == '__main__':
 			model = model_.SE_ResNet(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
 		elif args.model == 'TDNN':
 			model = model_.TDNN(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		elif args.model == 'transformer':
+			model = make_model(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
 
 		ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 		model.load_state_dict(ckpt['model_state'], strict=False)
