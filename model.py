@@ -230,7 +230,7 @@ class ResNet_mfcc(nn.Module):
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ReLU()
-		
+
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
 		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -273,7 +273,7 @@ class ResNet_mfcc(nn.Module):
 		return nn.Sequential(*layers)
 
 	def forward(self, x):
-	
+
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
@@ -293,11 +293,11 @@ class ResNet_lstm(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.in_planes = 32
 		super(ResNet_lstm, self).__init__()
-	
+
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ReLU()
-		
+
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
 		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -374,11 +374,11 @@ class ResNet_large(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,23,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.in_planes = 32
 		super(ResNet_large, self).__init__()
-	
+
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ReLU()
-		
+
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
 		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -421,7 +421,7 @@ class ResNet_large(nn.Module):
 		return nn.Sequential(*layers)
 
 	def forward(self, x):
-	
+
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
@@ -441,11 +441,11 @@ class ResNet_stats(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.in_planes = 32
 		super(ResNet_stats, self).__init__()
-	
+
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ReLU()
-		
+
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
 		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -486,7 +486,7 @@ class ResNet_stats(nn.Module):
 		return nn.Sequential(*layers)
 
 	def forward(self, x):
-	
+
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
@@ -512,7 +512,7 @@ class ResNet_small(nn.Module):
 		self.conv1 = nn.Conv2d(3 if delta else 1, 16, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(16)
 		self.activation = nn.ReLU()
-		
+
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
 		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -574,11 +574,11 @@ class SE_ResNet(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=SEBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.inplanes = 32
 		super(SE_ResNet, self).__init__()
-	
+
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
 		self.bn1 = nn.BatchNorm2d(32)
 		self.activation = nn.ReLU()
-		
+
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
 		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
@@ -641,3 +641,56 @@ class SE_ResNet(nn.Module):
 
 		mu = self.fc_mu(fc)
 		return mu
+
+class StatisticalPooling(nn.Module):
+
+	def forward(self, x):
+		# x is 3-D with axis [B, feats, T]
+		mu = x.mean(dim=2, keepdim=True)
+		std = x.std(dim=2, keepdim=True)
+		return torch.cat((mu, std), dim=1)
+
+class TDNN(nn.Module):
+	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.pyf
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
+		super(TDNN, self).__init__()
+		self.delta=delta
+		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 1500, 1),
+			nn.BatchNorm1d(1500),
+			nn.ReLU(inplace=True),
+			StatisticalPooling(),
+			nn.Conv1d(3000, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, n_z, 1) )
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+		# get output features at affine after stats pooling
+		# self.model = nn.Sequential(*list(self.model.children())[:-5])
+
+	def forward(self, x):
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+		return self.model(x.squeeze(1)).squeeze()

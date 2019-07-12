@@ -36,7 +36,7 @@ parser.add_argument('--valid-batch-size', type=int, default=64, metavar='N', hel
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'all'], default='resnet_mfcc', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'all'], default='resnet_mfcc', help='Model arch according to input type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -70,6 +70,8 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 		model = model_.ResNet_small(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'se_resnet':
 		model = model_.SE_ResNet(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
+	elif args.model == 'TDNN':
+		model = model_.TDNN(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 
 	if cuda:
 		model=model.to(device)
