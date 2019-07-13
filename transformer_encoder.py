@@ -173,7 +173,7 @@ class PositionalEncoding(nn.Module):
 		x = x + x_
 		return self.dropout(x)
 
-def make_model(n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False, N=6, d_model=128, d_ff=768, h=8, dropout=0.1):
+def make_model(n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False, N=5, d_model=128, d_ff=768, h=8, dropout=0.1):
 	"Helper: Construct a model from hyperparameters."
 	c = copy.deepcopy
 	attn = MultiHeadedAttention(h, d_model)
