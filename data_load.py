@@ -152,3 +152,109 @@ class Loader_valid(Dataset):
 				self.utt_list.append(utt)
 
 		open_file.close()
+
+class Loader_test(Dataset):
+
+	def __init__(self, hdf5_name):
+		super(Loader_test, self).__init__()
+		self.hdf5_name = hdf5_name
+
+		self.create_lists()
+
+		self.open_file = None
+
+		self.update_lists()
+
+	def __getitem__(self, index):
+
+		utt_1, utt_2, utt_3, utt_4, utt_5, spk, y= self.utt_list[index]
+
+		assert utt_1 in self.spk2utt[spk] and utt_2 in self.spk2utt[spk] and utt_3 in self.spk2utt[spk] and utt_4 in self.spk2utt[spk] and utt_5 in self.spk2utt[spk]
+
+		return utt_1, utt_2, utt_3, utt_4, utt_5, spk, y
+
+	def __len__(self):
+		return len(self.utt_list)
+
+	def prep_utterance(self, data):
+
+		if data.shape[2]>self.max_nb_frames:
+			ridx = np.random.randint(0, data.shape[2]-self.max_nb_frames)
+			data_ = data[:, :, ridx:(ridx+self.max_nb_frames)]
+		else:
+			mul = int(np.ceil(self.max_nb_frames/data.shape[0]))
+			data_ = np.tile(data, (1, 1, mul))
+			data_ = data_[:, :, :self.max_nb_frames]
+
+		if self.delta:
+			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
+
+		return data_
+
+	def create_lists(self):
+
+		open_file = h5py.File(self.hdf5_name, 'r')
+
+		self.spk2label = {}
+		self.spk2utt = {}
+		self.utt_list = []
+
+		for i, spk in enumerate(open_file):
+			spk_utt_list = list(open_file[spk])
+			self.spk2utt[spk] = spk_utt_list
+			self.spk2label[spk] = torch.LongTensor([i])
+
+		open_file.close()
+
+		self.n_speakers = len(self.spk2utt)
+
+	def update_lists(self):
+
+		self.utt_list = []
+
+		print('\nNew List!!\n')
+
+		for i, spk in enumerate(self.spk2utt):
+			spk_utt_list = np.random.permutation(list(self.spk2utt[spk]))
+
+			idxs = strided_app(np.arange(len(spk_utt_list)),5,5)
+
+			count_1=0
+			count_2=0
+
+			for idxs_list in idxs:
+				count_1+=len(idxs_list)
+				if len(idxs_list)==5:
+					count_2+=len(idxs_list)
+					self.utt_list.append([spk_utt_list[utt_idx] for utt_idx in idxs_list])
+					self.utt_list[-1].append(spk)
+					self.utt_list[-1].append(self.spk2label[spk])
+
+			print(spk, i, count_1, count_2)
+
+if __name__=='__main__':
+
+	import torch.utils.data
+	import argparse
+
+	parser = argparse.ArgumentParser(description='Test data loader')
+	parser.add_argument('--hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
+	args = parser.parse_args()
+
+	dataset = Loader_test(hdf5_name = args.hdf_file)
+	loader = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=True, num_workers=4)
+
+	loader.dataset.update_lists()
+
+	for batch in loader:
+		pass
+
+	loader.dataset.update_lists()
+
+	for batch in loader:
+		pass
+
+	loader.dataset.update_lists()
+
+	for batch in loader:
+		pass
