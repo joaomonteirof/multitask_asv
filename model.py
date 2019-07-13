@@ -386,9 +386,9 @@ class ResNet_qrnn(nn.Module):
 
 		from torchqrnn import QRNN
 
-		self.qrnn = QRNN(block.expansion*512, 256, num_layers=2, dropout=0.3)
+		self.qrnn = QRNN(block.expansion*512, 512, num_layers=2, dropout=0.3)
 
-		self.fc = nn.Linear(2*512+256,512)
+		self.fc = nn.Linear(1536,512)
 		self.lbn = nn.BatchNorm1d(512)
 
 		self.fc_mu = nn.Linear(512, n_z)
@@ -433,11 +433,19 @@ class ResNet_qrnn(nn.Module):
 		x = self.layer4(x)
 		x = x.squeeze(2).permute(2,0,1)
 
+		print(x.size())
+
 		out_seq, h_ = self.qrnn(x)
+
+		print(out_seq.size())
 
 		stats = self.attention(out_seq.permute(1,0,2).contiguous())
 
+		print(stats.size())
+
 		x = torch.cat([stats,h_.mean(0)],dim=1)
+
+		print(x.size())
 
 		fc = F.relu(self.lbn(self.fc(x)))
 		mu = self.fc_mu(fc)

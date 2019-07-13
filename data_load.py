@@ -219,19 +219,13 @@ class Loader_test(Dataset):
 
 			idxs = strided_app(np.arange(len(spk_utt_list)),5,5)
 
-			count_1=0
-			count_2=0
-
 			for idxs_list in idxs:
+
 				count_1+=len(idxs_list)
 				if len(idxs_list)==5:
-					count_2+=len(idxs_list)
 					self.utt_list.append([spk_utt_list[utt_idx] for utt_idx in idxs_list])
 					self.utt_list[-1].append(spk)
 					self.utt_list[-1].append(self.spk2label[spk])
-
-			print(spk, i, count_1, count_2)
-
 if __name__=='__main__':
 
 	import torch.utils.data
@@ -243,16 +237,6 @@ if __name__=='__main__':
 
 	dataset = Loader_test(hdf5_name = args.hdf_file)
 	loader = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=True, num_workers=4)
-
-	loader.dataset.update_lists()
-
-	for batch in loader:
-		pass
-
-	loader.dataset.update_lists()
-
-	for batch in loader:
-		pass
 
 	loader.dataset.update_lists()
 
