@@ -433,20 +433,9 @@ class ResNet_qrnn(nn.Module):
 		x = self.layer4(x)
 		x = x.squeeze(2).permute(2,0,1)
 
-		print(x.size())
-
 		out_seq, h_ = self.qrnn(x)
-
-		print(out_seq.size())
-
 		stats = self.attention(out_seq.permute(1,0,2).contiguous())
-
-		print(stats.size())
-
 		x = torch.cat([stats,h_.mean(0)],dim=1)
-
-		print(x.size())
-
 		fc = F.relu(self.lbn(self.fc(x)))
 		mu = self.fc_mu(fc)
 		return mu
