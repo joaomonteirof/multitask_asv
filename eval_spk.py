@@ -48,7 +48,7 @@ if __name__ == '__main__':
 	parser.add_argument('--spk2utt', type=str, default='./data/spk2utt', metavar='Path', help='Path to enrollment spk2utt file')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
-	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
+	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
@@ -64,6 +64,8 @@ if __name__ == '__main__':
 
 	if args.model == 'resnet_mfcc':
 		model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+	elif args.model == 'resnet_34':
+		model = model_.ResNet_34(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
 	elif args.model == 'resnet_lstm':
 		model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
 	elif args.model == 'resnet_qrnn':

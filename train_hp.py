@@ -25,7 +25,7 @@ parser.add_argument('--margin', type=float, default=0.3, metavar='m', help='marg
 parser.add_argument('--lamb', type=float, default=0.001, metavar='l', help='Entropy regularization penalty (default: 0.001)')
 parser.add_argument('--swap', type=str, default=None, help='Swaps anchor and positive depending on distance to negative example')
 parser.add_argument('--patience', type=int, default=10, metavar='S', help='Epochs to wait before decreasing LR by a factor of 0.5 (default: 10)')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
 parser.add_argument('--softmax', choices=['none', 'softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
@@ -56,6 +56,8 @@ valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.valid_
 
 if args.model == 'resnet_mfcc':
 	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
+elif args.model == 'resnet_34':
+	model = model_.ResNet_34(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'resnet_lstm':
 	model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'resnet_qrnn':
