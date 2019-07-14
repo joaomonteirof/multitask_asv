@@ -173,7 +173,7 @@ class Loader_test(Dataset):
 
 		utt_list_ = [utt_1, utt_2, utt_3, utt_4, utt_5]
 
-		assert len(x) > len(set(x))
+		assert len(utt_list_) == len(set(utt_list_))
 
 		return utt_1, utt_2, utt_3, utt_4, utt_5, spk, y
 
@@ -230,7 +230,6 @@ class Loader_test(Dataset):
 
 			for idxs_list in idxs:
 
-				count_1+=len(idxs_list)
 				if len(idxs_list)==5:
 					self.utt_list.append([spk_utt_list[utt_idx] for utt_idx in idxs_list])
 					included_utt_count+=len(self.utt_list[-1])
@@ -239,10 +238,28 @@ class Loader_test(Dataset):
 					self.utt_list[-1].append(spk)
 					self.utt_list[-1].append(self.spk2label[spk])
 
+		print('Total utts and included utts: {}, {}'.format(utt_count,included_utt_count))
+
+		tot_list = [item for sublist in self.utt_list for item in sublist[:-2]]
+
+		print(5*len(self.utt_list), len(tot_list))
+
 if __name__=='__main__':
 
 	import torch.utils.data
 	import argparse
+
+	def compare_spk2utts(l1, l2):
+		assert len(l1)==len(l2)
+		assert len(set(l1.keys()) & set(l2.keys()))==len(l1)
+		count_1=0
+		count_2=0
+		for spk in l1:
+			assert len(set(l1[spk]) & set(l2[spk]))==min(len(l1[spk]), len(l2[spk]))
+			count_1+=len(l1[spk])
+			count_2+=len(l2[spk])
+
+		print(count_1, count_2)
 
 	parser = argparse.ArgumentParser(description='Test data loader')
 	parser.add_argument('--hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
@@ -253,5 +270,17 @@ if __name__=='__main__':
 
 	loader.dataset.update_lists()
 
+	print('Dataset length: {}, {}'.format(len(loader.dataset), len(loader.dataset.utt_list)))
+
+	spk2utt = {}
+
 	for batch in loader:
-		pass
+		utt_1, utt_2, utt_3, utt_4, utt_5, spk, y = batch
+
+		for i in range(len(batch[-1])):
+			if spk[i] in spk2utt:
+				spk2utt[spk[i]]+=[utt_1[i], utt_2[i], utt_3[i], utt_4[i], utt_5[i]]
+			else:
+				spk2utt[spk[i]]=[utt_1[i], utt_2[i], utt_3[i], utt_4[i], utt_5[i]]
+
+	compare_spk2utts(loader.dataset.spk2utt, spk2utt)
