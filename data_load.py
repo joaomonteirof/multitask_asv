@@ -171,6 +171,10 @@ class Loader_test(Dataset):
 
 		assert utt_1 in self.spk2utt[spk] and utt_2 in self.spk2utt[spk] and utt_3 in self.spk2utt[spk] and utt_4 in self.spk2utt[spk] and utt_5 in self.spk2utt[spk]
 
+		utt_list_ = [utt_1, utt_2, utt_3, utt_4, utt_5]
+
+		assert len(x) > len(set(x))
+
 		return utt_1, utt_2, utt_3, utt_4, utt_5, spk, y
 
 	def __len__(self):
@@ -214,8 +218,13 @@ class Loader_test(Dataset):
 
 		print('\nNew List!!\n')
 
+		utt_count = 0
+		included_utt_count = 0
+
 		for i, spk in enumerate(self.spk2utt):
 			spk_utt_list = np.random.permutation(list(self.spk2utt[spk]))
+
+			utt_count += len(spk_utt_list)
 
 			idxs = strided_app(np.arange(len(spk_utt_list)),5,5)
 
@@ -224,8 +233,12 @@ class Loader_test(Dataset):
 				count_1+=len(idxs_list)
 				if len(idxs_list)==5:
 					self.utt_list.append([spk_utt_list[utt_idx] for utt_idx in idxs_list])
+					included_utt_count+=len(self.utt_list[-1])
+					if len(self.utt_list)>1:
+						assert len(set(self.utt_list[-1]) & set(self.utt_list[-2]))==0
 					self.utt_list[-1].append(spk)
 					self.utt_list[-1].append(self.spk2label[spk])
+
 if __name__=='__main__':
 
 	import torch.utils.data
