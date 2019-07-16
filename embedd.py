@@ -45,25 +45,25 @@ if __name__ == '__main__':
 		device = get_freer_gpu()
 
 	if args.model == 'resnet_mfcc':
-		model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'resnet_34':
-		model = model_.ResNet_34(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.ResNet_34(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'resnet_lstm':
-		model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'resnet_qrnn':
-		model = model_.ResNet_qrnn(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.ResNet_qrnn(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'resnet_stats':
-		model = model_.ResNet_stats(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.ResNet_stats(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'resnet_large':
-		model = model_.ResNet_large(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.ResNet_large(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'resnet_small':
-		model = model_.ResNet_small(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.ResNet_small(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'se_resnet':
-		model = model_.SE_ResNet(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.SE_ResNet(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'TDNN':
-		model = model_.TDNN(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = model_.TDNN(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'transformer':
-		model = make_model(n_z=args.latent_size, proj_size=None, ncoef=args.ncoef)
+		model = make_model(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 
 	ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 	model.load_state_dict(ckpt['model_state'], strict=False)
