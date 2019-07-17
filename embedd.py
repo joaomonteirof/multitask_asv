@@ -8,7 +8,7 @@ from kaldi_io import read_mat_scp, open_or_fd, write_vec_flt
 import model as model_
 import scipy.io as sio
 from transformer_encoder import *
-from utils.utils import get_freer_gpu
+from utils.utils import *
 
 def prep_feats(data_):
 
@@ -27,6 +27,7 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Compute embeddings')
 	parser.add_argument('--path-to-data', type=str, default='./data/', metavar='Path', help='Path to input data')
+	parser.add_argument('--utt2spk', type=str, default=None, metavar='Path', help='Optional path for utt2spk')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--out-path', type=str, default='./', metavar='Path', help='Path to output hdf file')
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
@@ -79,6 +80,9 @@ if __name__ == '__main__':
 		print('Nothing found at {}.'.format(args.path_to_data))
 		exit(1)
 
+	if args.utt2spk:
+		utt2spk = read_utt2spk(args.utt2spk)
+
 	print('Start of data embeddings computation')
 
 	embeddings = {}
@@ -90,6 +94,10 @@ if __name__ == '__main__':
 			data = { k:m for k,m in read_mat_scp(file_) }
 
 			for i, utt in enumerate(data):
+
+				if args.utt2spk:
+					if not utt in utt2spk:
+						continue
 
 				print('Computing embedding for utterance '+ utt)
 

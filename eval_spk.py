@@ -135,7 +135,6 @@ if __name__ == '__main__':
 
 		unlab_emb=torch.cat(unlab_emb, 0).mean(0)
 
-
 	spk2utt = read_spk2utt(args.spk2utt)
 
 	speakers_enroll, utterances_test, labels = read_trials(args.trials_path)
