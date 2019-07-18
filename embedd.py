@@ -97,8 +97,8 @@ if __name__ == '__main__':
 
 				if args.utt2spk:
 					if not utt in utt2spk:
-					print('Skipping utterance '+ utt)
-						continue
+						print('Skipping utterance '+ utt)
+							continue
 
 				feats = prep_feats(data[utt])
 
