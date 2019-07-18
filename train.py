@@ -11,6 +11,7 @@ import os
 import sys
 from utils.utils import *
 from transformer_encoder import *
+from torch.utils.tensorboard import SummaryWriter
 
 # Training settings
 parser = argparse.ArgumentParser(description='Speaker embbedings with combined loss')
@@ -26,6 +27,7 @@ parser.add_argument('--swap', action='store_true', default=False, help='Swaps an
 parser.add_argument('--patience', type=int, default=10, metavar='S', help='Epochs to wait before decreasing LR by a factor of 0.5 (default: 10)')
 parser.add_argument('--checkpoint-epoch', type=int, default=None, metavar='N', help='epoch to load for checkpointing. If None, training starts from scratch')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
+parser.add_argument('--logdir', type=str, default=None, metavar='Path', help='Path for checkpointing')
 parser.add_argument('--pretrained-path', type=str, default=None, metavar='Path', help='Path for pre trained model')
 parser.add_argument('--train-hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
 parser.add_argument('--valid-hdf-file', type=str, default=None, metavar='Path', help='Path to hdf data')
@@ -50,6 +52,11 @@ torch.manual_seed(args.seed)
 if args.cuda:
 	torch.cuda.manual_seed(args.seed)
 
+if args.logdir:
+	writer = SummaryWriter(log_dir=args.logdir)
+else:
+	writer = None
+
 train_dataset = Loader(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, delta = args.delta)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, worker_init_fn=set_np_randomseed)
 
@@ -62,7 +69,7 @@ else:
 if args.cuda:
 	device = get_freer_gpu()
 else:
-	device = None
+	device = torch.device('cpu')
 
 if args.model == 'resnet_mfcc':
 	model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
@@ -96,12 +103,11 @@ if args.pretrained_path is not None:
 		print("Unexpected error:", sys.exc_info()[0])
 		raise
 
-if args.cuda:
-	model = model.to(device)
+model = model.to(device)
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2)
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, verbose=args.verbose, device=device, save_cp=(not args.no_cp), checkpoint_path=args.checkpoint_path, checkpoint_epoch=args.checkpoint_epoch, swap=args.swap, softmax=args.softmax, pretrain=args.pretrain, mining=args.mine_triplets, cuda=args.cuda)
+trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, verbose=args.verbose, device=device, save_cp=(not args.no_cp), checkpoint_path=args.checkpoint_path, checkpoint_epoch=args.checkpoint_epoch, swap=args.swap, softmax=args.softmax, pretrain=args.pretrain, mining=args.mine_triplets, cuda=args.cuda, logger=writer)
 
 if args.verbose >0:
 	print(' ')

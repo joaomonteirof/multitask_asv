@@ -12,7 +12,7 @@ from utils.utils import compute_eer
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, patience, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, softmax=False, pretrain=False, mining=False, cuda=True):
+	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, patience, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, softmax=False, pretrain=False, mining=False, cuda=True, logger=None):
 		if checkpoint_path is None:
 			# Save to current directory
 			self.checkpoint_path = os.getcwd()
@@ -41,6 +41,7 @@ class TrainLoop(object):
 		self.save_cp = save_cp
 		self.device = device
 		self.history = {'train_loss': [], 'train_loss_batch': []}
+		logger = self.logger
 
 		if self.valid_loader is not None:
 			self.history['valid_loss'] = []
@@ -82,6 +83,10 @@ class TrainLoop(object):
 					train_loss_epoch+=train_loss
 					ce_epoch+=ce
 					self.total_iters += 1
+					if self.logger:
+						self.logger.add_scalar('Train Loss', train_loss)
+						self.logger.add_scalar('Triplet Loss', train_loss-ce)
+						self.logger.add_scalar('Cross enropy', ce)
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
 				self.history['softmax'].append(ce_epoch/(t+1))
@@ -97,6 +102,8 @@ class TrainLoop(object):
 					self.history['train_loss_batch'].append(ce)
 					ce_epoch+=ce
 					self.total_iters += 1
+					if self.logger:
+						self.logger.add_scalar('Cross enropy', ce)
 
 				self.history['train_loss'].append(ce_epoch/(t+1))
 
@@ -109,6 +116,8 @@ class TrainLoop(object):
 					self.history['train_loss_batch'].append(train_loss)
 					train_loss_epoch+=train_loss
 					self.total_iters += 1
+					if self.logger:
+						self.logger.add_scalar('Train Loss', train_loss)
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
 
@@ -129,8 +138,13 @@ class TrainLoop(object):
 						scores, labels = scores_batch, labels_batch
 
 				self.history['valid_loss'].append(compute_eer(labels, scores))
+				self.logger.add_scalar('EER', train_loss)
 				if self.verbose>0:
 					print('Current validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss'][-1], np.min(self.history['valid_loss']), 1+np.argmin(self.history['valid_loss'])))
+				if self.logger:
+					self.logger.add_scalar('EER', self.history['valid_loss'][-1])
+					self.logger.add_scalar('Best EER', np.min(self.history['valid_loss']))
+					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores)
 
 				self.scheduler.step(self.history['valid_loss'][-1])
 
@@ -255,6 +269,9 @@ class TrainLoop(object):
 
 			embeddings = self.model.forward(utterances)
 			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+
+			if self.logger:
+				self.logger.add_embedding(mat=embeddings.detach().cpu().numpy(), metadata=list(y.detach().cpu().numpy()))
 
 			triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
 
