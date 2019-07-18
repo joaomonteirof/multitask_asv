@@ -28,3 +28,4 @@
 *.hdf
 *.err
 *.out
+*tfevents*
