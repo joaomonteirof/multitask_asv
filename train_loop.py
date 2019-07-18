@@ -41,7 +41,7 @@ class TrainLoop(object):
 		self.save_cp = save_cp
 		self.device = device
 		self.history = {'train_loss': [], 'train_loss_batch': []}
-		logger = self.logger
+		self.logger = logger
 
 		if self.valid_loader is not None:
 			self.history['valid_loss'] = []
