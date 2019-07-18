@@ -97,9 +97,8 @@ if __name__ == '__main__':
 
 				if args.utt2spk:
 					if not utt in utt2spk:
+					print('Skipping utterance '+ utt)
 						continue
-
-				print('Computing embedding for utterance '+ utt)
 
 				feats = prep_feats(data[utt])
 
