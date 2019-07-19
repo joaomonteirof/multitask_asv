@@ -1,5 +1,6 @@
 ## SE stuff from https://github.com/moskomule/senet.pytorch/blob/master/senet/se_resnet.py
 
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -831,3 +832,162 @@ class TDNN(nn.Module):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 		return self.model(x.squeeze(1)).squeeze()
+
+
+class aspp_res(nn.Module):
+
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False, kernel_sizes=[11, 11, 11, 11], strides=[10, 4, 2, 2], dilations=[1, 6, 12, 18], fmaps_factor=128):
+		super().__init__()
+
+		self.ASPP_blocks = nn.ModuleList()
+		self.delta = delta
+
+		for i in range(len(kernel_sizes)):
+			if i == 0:
+				self.ASPP_blocks.append(aspp_resblock(3*ncoef if delta else ncoef, fmaps_factor, kernel_sizes[i], strides[i], dilations, 3*ncoef if delta else ncoef, False))
+			else:
+				self.ASPP_blocks.append(aspp_resblock(i*fmaps_factor, (i+1)*fmaps_factor, kernel_sizes[i], strides[i], dilations, i*fmaps_factor, False))
+
+		self.lin = nn.Sequential(
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Linear(512, n_z) )
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+	def forward(self, x):
+
+		x=x.squeeze(1)
+
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+
+		for block in self.ASPP_blocks:
+			x = block(x)
+
+		x = self.lin(x.mean(-1))
+
+		return x
+
+class _ASPPModule(nn.Module):
+	def __init__(self, inplanes, planes, kernel_size, padding, dilation):
+		super(_ASPPModule, self).__init__()
+		self.atrous_conv = nn.Conv1d(inplanes, planes, kernel_size=kernel_size, stride=1, padding=padding, dilation=dilation, bias=False)
+		self.bn = nn.BatchNorm1d(planes)
+		self.relu = nn.ReLU()
+
+		self._init_weight()
+
+	def forward(self, x):
+		x = self.atrous_conv(x)
+		x = self.bn(x)
+
+		return self.relu(x)
+
+	def _init_weight(self):
+		for m in self.modules():
+			if isinstance(m, nn.Conv1d):
+				torch.nn.init.kaiming_normal_(m.weight)
+			elif isinstance(m, nn.BatchNorm1d):
+				m.weight.data.fill_(1)
+				m.bias.data.zero_()
+
+class ASPP(nn.Module):
+	def __init__(self, inplanes, emb_dim, dilations=[1, 6, 12, 18], fmaps=48, dense=False):
+		super(ASPP, self).__init__()
+
+		if not dense:
+			self.aspp1 = _ASPPModule(inplanes, fmaps, 1, padding=0, dilation=dilations[0])
+			self.aspp2 = _ASPPModule(inplanes, fmaps, 3, padding=dilations[1], dilation=dilations[1])
+			self.aspp3 = _ASPPModule(inplanes, fmaps, 3, padding=dilations[2], dilation=dilations[2])
+			self.aspp4 = _ASPPModule(inplanes, fmaps, 3, padding=dilations[3], dilation=dilations[3])
+
+			self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool1d((1)),
+							nn.Conv1d(inplanes, fmaps, 1, stride=1, bias=False),
+							nn.BatchNorm1d(fmaps),
+							nn.ReLU())
+
+		else:
+			self.aspp1 = _ASPPModule(inplanes, fmaps, dilations[0], padding=0, dilation=1)
+			self.aspp2 = _ASPPModule(inplanes, fmaps, dilations[1], padding=dilations[1]//2, dilation=1)
+			self.aspp3 = _ASPPModule(inplanes, fmaps, dilations[2], padding=dilations[2]//2, dilation=1)
+			self.aspp4 = _ASPPModule(inplanes, fmaps, dilations[3], padding=dilations[3]//2, dilation=1)
+
+			self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool1d((1)),
+							nn.Conv1d(inplanes, fmaps, 1, stride=1, bias=False),
+							nn.BatchNorm1d(fmaps),
+							nn.ReLU())
+
+		self.conv1 = nn.Conv1d(fmaps * 5, emb_dim, 1, bias=False)
+		self.bn1 = nn.BatchNorm1d(emb_dim)
+		self.relu = nn.ReLU()
+		self.dropout = nn.Dropout(0.5)
+		self._init_weight()
+
+	def forward(self, x):
+		x1 = self.aspp1(x)
+		x2 = self.aspp2(x)
+		x3 = self.aspp3(x)
+		x4 = self.aspp4(x)
+		x5 = self.global_avg_pool(x)
+		x5 = F.interpolate(x5, size=x4.size()[2:], mode='linear', align_corners=True)
+		x = torch.cat((x1, x2, x3, x4, x5), dim=1)
+
+		x = self.conv1(x)
+		x = self.bn1(x)
+		x = self.relu(x)
+
+		return self.dropout(x)
+
+	def _init_weight(self):
+		for m in self.modules():
+			if isinstance(m, nn.Conv1d):
+				torch.nn.init.kaiming_normal_(m.weight)
+			elif isinstance(m, nn.BatchNorm1d):
+				m.weight.data.fill_(1)
+				m.bias.data.zero_()
+
+class aspp_resblock(nn.Module):
+
+	def __init__(self, in_channel, out_channel, kernel_size, stride, dilations, fmaps, dense=False):
+
+		super().__init__()
+
+		padding = kernel_size // 2
+
+		self.block1 = nn.Sequential(ASPP(in_channel, out_channel, dilations, fmaps, dense),
+					nn.Conv1d(out_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=padding, bias=False),
+					nn.BatchNorm1d(out_channel),
+					nn.ReLU(out_channel))
+
+		self.block2 = nn.Sequential(ASPP(out_channel, out_channel, dilations, fmaps, dense),
+					nn.Conv1d(out_channel, out_channel, kernel_size=kernel_size, stride=1, padding=padding, bias=False),
+					nn.BatchNorm1d(out_channel),
+					nn.ReLU(out_channel))
+
+		self._init_weight()
+
+	def forward(self, x):
+
+		out_1 = self.block1(x)
+		out_2 = self.block2(out_1)
+
+		y = out_1 + out_2
+
+		return y
+
+
+	def _init_weight(self):
+		for m in self.modules():
+			if isinstance(m, nn.Conv1d):
+				n = m.kernel_size[0] * m.out_channels
+				m.weight.data.normal_(0, math.sqrt(2. / n))
+			elif isinstance(m, nn.BatchNorm1d):
+				m.weight.data.fill_(1)
+				m.bias.data.zero_()
