@@ -146,7 +146,7 @@ class TrainLoop(object):
 				if self.logger:
 					self.logger.add_scalar('EER', self.history['valid_loss'][-1], self.cur_epoch)
 					self.logger.add_scalar('Best EER', np.min(self.history['valid_loss']), self.cur_epoch)
-					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores, self.cur_epoch)
+					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores, global_step=self.cur_epoch)
 					self.logger.add_embedding(mat=emb, metadata=list(y_), global_step=self.cur_epoch)
 
 				self.scheduler.step(self.history['valid_loss'][-1])
