@@ -84,9 +84,9 @@ class TrainLoop(object):
 					ce_epoch+=ce
 					self.total_iters += 1
 					if self.logger:
-						self.logger.add_scalar('Train Loss', train_loss)
-						self.logger.add_scalar('Triplet Loss', train_loss-ce)
-						self.logger.add_scalar('Cross enropy', ce)
+						self.logger.add_scalar('Train Loss', train_loss, self.cur_epoch*t+t)
+						self.logger.add_scalar('Triplet Loss', train_loss-ce, self.cur_epoch*t+t)
+						self.logger.add_scalar('Cross enropy', ce, self.cur_epoch*t+t)
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
 				self.history['softmax'].append(ce_epoch/(t+1))
@@ -103,7 +103,7 @@ class TrainLoop(object):
 					ce_epoch+=ce
 					self.total_iters += 1
 					if self.logger:
-						self.logger.add_scalar('Cross enropy', ce)
+						self.logger.add_scalar('Cross enropy', ce, self.cur_epoch*t+t)
 
 				self.history['train_loss'].append(ce_epoch/(t+1))
 
@@ -117,7 +117,7 @@ class TrainLoop(object):
 					train_loss_epoch+=train_loss
 					self.total_iters += 1
 					if self.logger:
-						self.logger.add_scalar('Train Loss', train_loss)
+						self.logger.add_scalar('Train Loss', train_loss, self.cur_epoch*t+t)
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
 
@@ -126,25 +126,28 @@ class TrainLoop(object):
 
 			if self.valid_loader is not None:
 
-				scores, labels = None, None
+				scores, labels, emb, y_ = None, None, None, None
 
 				for t, batch in enumerate(self.valid_loader):
-					scores_batch, labels_batch = self.valid(batch)
+					scores_batch, labels_batch, emb_batch, y_batch = self.valid(batch)
 
 					try:
 						scores = np.concatenate([scores, scores_batch], 0)
 						labels = np.concatenate([labels, labels_batch], 0)
+						emb = np.concatenate([emb, emb_batch], 0)
+						y_ = np.concatenate([y_, y_batch], 0)
 					except:
-						scores, labels = scores_batch, labels_batch
+						scores, labels, emb, y_ = scores_batch, labels_batch, emb_batch, y_batch
 
 				self.history['valid_loss'].append(compute_eer(labels, scores))
-				self.logger.add_scalar('EER', train_loss)
+				self.logger.add_scalar('EER', train_loss, self.cur_epoch)
 				if self.verbose>0:
 					print('Current validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss'][-1], np.min(self.history['valid_loss']), 1+np.argmin(self.history['valid_loss'])))
 				if self.logger:
-					self.logger.add_scalar('EER', self.history['valid_loss'][-1])
-					self.logger.add_scalar('Best EER', np.min(self.history['valid_loss']))
-					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores)
+					self.logger.add_scalar('EER', self.history['valid_loss'][-1], self.cur_epoch)
+					self.logger.add_scalar('Best EER', np.min(self.history['valid_loss']), self.cur_epoch)
+					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores, self.cur_epoch)
+					self.logger.add_embedding(mat=emb, metadata=list(y_), global_step=self.cur_epoch)
 
 				self.scheduler.step(self.history['valid_loss'][-1])
 
@@ -270,9 +273,6 @@ class TrainLoop(object):
 			embeddings = self.model.forward(utterances)
 			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
-			if self.logger:
-				self.logger.add_embedding(mat=embeddings.detach().cpu().numpy(), metadata=list(y.detach().cpu().numpy()))
-
 			triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
 
 			if self.cuda_mode:
@@ -285,7 +285,7 @@ class TrainLoop(object):
 			scores_p = torch.nn.functional.cosine_similarity(emb_a, emb_p)
 			scores_n = torch.nn.functional.cosine_similarity(emb_a, emb_n)
 
-		return np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0)
+		return np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0), embeddings.detach().cpu().numpy, y.detach().cpu().numpy()
 
 	def triplet_loss(self, emba, embp, embn, reduce_=True):
 
