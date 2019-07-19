@@ -285,7 +285,7 @@ class TrainLoop(object):
 			scores_p = torch.nn.functional.cosine_similarity(emb_a, emb_p)
 			scores_n = torch.nn.functional.cosine_similarity(emb_a, emb_n)
 
-		return np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0), embeddings.detach().cpu().numpy, y.detach().cpu().numpy()
+		return np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0), embeddings.detach().cpu().numpy(), y.detach().cpu().numpy()
 
 	def triplet_loss(self, emba, embp, embn, reduce_=True):
 
