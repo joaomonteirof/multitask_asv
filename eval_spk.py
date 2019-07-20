@@ -11,17 +11,23 @@ import os
 import sys
 from transformer_encoder import *
 from utils.utils import *
+from librosa.feature import delta
 
-def prep_feats(data_, min_nb_frames=50):
+def prep_feats(data_, delta=False):
 
 	features = data_.T
 
-	if features.shape[1]<min_nb_frames:
-		mul = int(np.ceil(min_nb_frames/features.shape[1]))
+	if features.shape[1]<50:
+		mul = int(np.ceil(50/features.shape[1]))
 		features = np.tile(features, (1, mul))
-		features = features[:, :min_nb_frames]
+		features = features[:, :50]
 
-	return torch.from_numpy(features[np.newaxis, np.newaxis, :, :]).float()
+	features = features[np.newaxis, :, :]
+
+	if delta:
+		features = np.concatenate([features, delta(features,width=3,order=1), delta(features,width=3,order=2)], axis=0)
+
+	return torch.from_numpy(features[np.newaxis, :, :, :]).float()
 
 def compute_metrics(y, y_score):
 	fpr, tpr, thresholds = metrics.roc_curve(y, y_score, pos_label=1)
@@ -49,6 +55,7 @@ if __name__ == '__main__':
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'transformer', 'aspp_res'], default='resnet_mfcc', help='Model arch according to input type')
+	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
@@ -63,27 +70,27 @@ if __name__ == '__main__':
 		device = get_freer_gpu()
 
 	if args.model == 'resnet_mfcc':
-		model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'resnet_34':
-		model = model_.ResNet_34(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.ResNet_34(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'resnet_lstm':
-		model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.ResNet_lstm(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'resnet_qrnn':
-		model = model_.ResNet_qrnn(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.ResNet_qrnn(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'resnet_stats':
-		model = model_.ResNet_stats(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.ResNet_stats(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'resnet_large':
-		model = model_.ResNet_large(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.ResNet_large(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'resnet_small':
-		model = model_.ResNet_small(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.ResNet_small(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'se_resnet':
-		model = model_.SE_ResNet(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.SE_ResNet(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'TDNN':
-		model = model_.TDNN(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.TDNN(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'transformer':
-		model = make_model(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = make_model(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'aspp_res':
-		model = model_.aspp_res(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = model_.aspp_res(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 
 	ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 	model.load_state_dict(ckpt['model_state'], strict=False)
@@ -127,7 +134,7 @@ if __name__ == '__main__':
 
 			for k,v in read_mat_scp(file_):
 
-				unlab_utt_data = prep_feats(v)
+				unlab_utt_data = prep_feats(v, args.delta)
 
 				if args.cuda:
 					unlab_utt_data = unlab_utt_data.cuda(device)
@@ -163,7 +170,7 @@ if __name__ == '__main__':
 
 				for k, enroll_utt in enumerate(enroll_utts):
 
-					enroll_utt_data = prep_feats(enroll_data[enroll_utt])
+					enroll_utt_data = prep_feats(enroll_data[enroll_utt], args.delta)
 
 					if args.cuda:
 						enroll_utt_data = enroll_utt_data.cuda(device)
@@ -190,7 +197,7 @@ if __name__ == '__main__':
 
 			except KeyError:
 
-				test_utt_data = prep_feats(test_data[test_utt])
+				test_utt_data = prep_feats(test_data[test_utt], args.delta)
 
 				if args.cuda:
 					enroll_utt_data = enroll_utt_data.cuda(device)

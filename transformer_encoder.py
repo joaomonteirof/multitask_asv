@@ -33,7 +33,7 @@ class Encoder(nn.Module):
 			else:
 				raise NotImplementedError
 		
-	def forward(self, x, mask=None):
+	def forward(self, x, mask=None, inner=False):
 		"Pass the input (and mask) through each layer in turn."
 
 		if self.delta:

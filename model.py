@@ -273,7 +273,7 @@ class ResNet_mfcc(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
@@ -288,7 +288,7 @@ class ResNet_mfcc(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return mu
+		return fc if inner else mu
 
 class ResNet_34(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBlock, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -340,7 +340,7 @@ class ResNet_34(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
@@ -355,7 +355,7 @@ class ResNet_34(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return mu
+		return fc if inner else mu
 
 class ResNet_lstm(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -409,7 +409,7 @@ class ResNet_lstm(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
@@ -436,7 +436,7 @@ class ResNet_lstm(nn.Module):
 
 		fc = F.relu(self.lbn(self.fc(x)))
 		mu = self.fc_mu(fc)
-		return mu
+		return fc if inner else mu
 
 class ResNet_qrnn(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -492,7 +492,7 @@ class ResNet_qrnn(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
@@ -506,7 +506,7 @@ class ResNet_qrnn(nn.Module):
 		x = torch.cat([stats,h_.mean(0)],dim=1)
 		fc = F.relu(self.lbn(self.fc(x)))
 		mu = self.fc_mu(fc)
-		return mu
+		return fc if inner else mu
 
 class ResNet_large(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,23,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -558,7 +558,7 @@ class ResNet_large(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
@@ -573,7 +573,8 @@ class ResNet_large(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return mu
+
+		return fc if inner else mu
 
 class ResNet_stats(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -623,7 +624,7 @@ class ResNet_stats(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
@@ -640,7 +641,7 @@ class ResNet_stats(nn.Module):
 
 		#embs = torch.div(mu, torch.norm(mu, 2, 1).unsqueeze(1).expand_as(mu))
 
-		return mu
+		return fc if inner else mu
 
 class ResNet_small(nn.Module):
 	def __init__(self, n_z=256, layers=[2,2,2,2], block=PreActBlock, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -692,7 +693,7 @@ class ResNet_small(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
@@ -706,7 +707,7 @@ class ResNet_small(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return mu
+		return fc if inner else mu
 
 class SE_ResNet(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=SEBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -763,7 +764,7 @@ class SE_ResNet(nn.Module):
 
 		return nn.Sequential(*layers)
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
 		x = self.activation(self.bn1(x))
@@ -778,7 +779,7 @@ class SE_ResNet(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return mu
+		return fc if inner else mu
 
 class StatisticalPooling(nn.Module):
 
@@ -828,7 +829,7 @@ class TDNN(nn.Module):
 		# get output features at affine after stats pooling
 		# self.model = nn.Sequential(*list(self.model.children())[:-5])
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 		return self.model(x.squeeze(1)).squeeze()
@@ -861,7 +862,7 @@ class aspp_res(nn.Module):
 			else:
 				raise NotImplementedError
 
-	def forward(self, x):
+	def forward(self, x, inner=False):
 
 		x=x.squeeze(1)
 
