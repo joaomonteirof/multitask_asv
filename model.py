@@ -875,8 +875,6 @@ class aspp_res(nn.Module):
 		for block in self.ASPP_blocks:
 			x = block(x)
 
-		print(x.size())
-
 		x = self.lin(x.mean(-1))
 
 		return x
