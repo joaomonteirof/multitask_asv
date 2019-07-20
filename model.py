@@ -837,7 +837,7 @@ class TDNN(nn.Module):
 
 class aspp_res(nn.Module):
 
-	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False, kernel_sizes=[11, 11, 11, 11], strides=[10, 4, 2, 2], dilations=[1, 6, 12, 18], fmaps_factor=128):
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False, kernel_sizes=[5, 5, 5, 5, 3, 3], strides=[4, 4, 4, 2, 2, 2], dilations=[1, 2, 2, 4, 4, 4], fmaps_factor=128):
 		super().__init__()
 
 		self.ASPP_blocks = nn.ModuleList()
@@ -850,6 +850,9 @@ class aspp_res(nn.Module):
 				self.ASPP_blocks.append(aspp_resblock(i*fmaps_factor, (i+1)*fmaps_factor, kernel_sizes[i], strides[i], dilations, i*fmaps_factor, False))
 
 		self.lin = nn.Sequential(
+			nn.BatchNorm1d(768),
+			nn.ReLU(inplace=True),
+			nn.Linear(768, 512),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Linear(512, n_z) )
@@ -871,6 +874,8 @@ class aspp_res(nn.Module):
 
 		for block in self.ASPP_blocks:
 			x = block(x)
+
+		print(x.size())
 
 		x = self.lin(x.mean(-1))
 
