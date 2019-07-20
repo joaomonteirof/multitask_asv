@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
 				if args.model==('TDNN' or args.model=='aspp_res' or args.model=='transformer') and args.inner:
 
-					if self.delta:
+					if args.delta:
 						feats=feats.view(feats.size(0), feats.size(1)*feats.size(2), feats.size(3))
 					else:
 						feats=feats.squeeze(1)
