@@ -789,7 +789,7 @@ class StatisticalPooling(nn.Module):
 		return torch.cat((mu, std), dim=1)
 
 class TDNN(nn.Module):
-	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.pyf
+	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.py
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super(TDNN, self).__init__()
 		self.delta=delta

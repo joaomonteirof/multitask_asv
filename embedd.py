@@ -63,6 +63,7 @@ if __name__ == '__main__':
 		model = model_.SE_ResNet(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'TDNN':
 		model = model_.TDNN(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
+		model = torch.nn.Sequential(*list(model.model.children())[:-5])
 	elif args.model == 'transformer':
 		model = make_model(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef)
 	elif args.model == 'aspp_res':
@@ -74,7 +75,7 @@ if __name__ == '__main__':
 	model.eval()
 
 	if args.cuda:
-		model = model.cuda(device)
+		model = model.to(device)
 
 	scp_list = glob.glob(args.path_to_data + '*.scp')
 
@@ -106,8 +107,8 @@ if __name__ == '__main__':
 
 				try:
 					if args.cuda:
-						feats = feats.cuda(device)
-						model = model.cuda(device)
+						feats = feats.to(device)
+						model = model.to(device)
 
 					emb = model.forward(feats)
 
