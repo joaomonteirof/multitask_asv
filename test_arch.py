@@ -92,12 +92,14 @@ if args.model == 'se_resnet' or args.model == 'all':
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('se_resnet', mu.size(), out.size())
 if args.model == 'TDNN' or args.model == 'all':
-	batch = torch.rand(3, args.ncoef, 200)
+	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
 	model = model_.TDNN(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
-	mu = model.forward(batch, inner=args.inner)
 	if args.inner:
+		model.model = torch.nn.Sequential(*list(model.model.children())[:-5])
+		mu = model.forward(batch, inner=args.inner)
 		print('TDNN', mu.size())
 	else:
+		mu = model.forward(batch, inner=args.inner)
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('TDNN', mu.size(), out.size())
 if args.model == 'transformer' or args.model == 'all':

@@ -72,7 +72,7 @@ if __name__ == '__main__':
 	elif args.model == 'TDNN':
 		model = model_.TDNN(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 		if args.inner:
-			model = torch.nn.Sequential(*list(model.model.children())[:-5])
+			model.model = torch.nn.Sequential(*list(model.model.children())[:-5])
 	elif args.model == 'transformer':
 		model = make_model(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'aspp_res':
@@ -113,13 +113,6 @@ if __name__ == '__main__':
 						continue
 
 				feats = prep_feats(data[utt], args.delta)
-
-				if args.model==('TDNN' or args.model=='aspp_res' or args.model=='transformer') and args.inner:
-
-					if args.delta:
-						feats=feats.view(feats.size(0), feats.size(1)*feats.size(2), feats.size(3))
-					else:
-						feats=feats.squeeze(1)
 
 				try:
 					if args.cuda:
