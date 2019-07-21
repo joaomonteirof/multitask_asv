@@ -40,6 +40,7 @@ if __name__ == '__main__':
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
+	parser.add_argument('--eps', type=float, default=0.0, metavar='eps', help='Add noise to embeddings')
 	parser.add_argument('--inner', action='store_true', default=False, help='Get embeddings from inner layer')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
@@ -128,6 +129,9 @@ if __name__ == '__main__':
 					emb = model.forward(feats, inner=args.inner)
 
 				embeddings[utt] = emb.detach().cpu().numpy().squeeze()
+
+				if args.eps>0.0:
+					embeddings[utt] += args.eps*np.random.randn(emb.size(1))
 
 	print('Storing embeddings in output file')
 
