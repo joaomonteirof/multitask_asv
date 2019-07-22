@@ -45,6 +45,9 @@ args.delta = True if args.delta=='True' else False
 
 if args.cuda:
 	device = get_freer_gpu()
+	if args.model == 'resnet_qrnn':
+		import cupy
+		cupy.cuda.Device(int(str(device).split(':')[-1])).use()
 else:
 	device = None
 

@@ -51,6 +51,9 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 
 	if cuda:
 		device=get_freer_gpu()
+		if args.model == 'resnet_qrnn':
+			import cupy
+			cupy.cuda.Device(int(str(device).split(':')[-1])).use()
 
 	train_dataset = Loader(hdf5_name = train_hdf_file, max_nb_frames = int(n_frames), delta = delta)
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=n.workers, worker_init_fn=set_np_randomseed)

@@ -53,6 +53,9 @@ if __name__ == '__main__':
 
 	if args.cuda:
 		device = get_freer_gpu()
+		if args.model == 'resnet_qrnn':
+			import cupy
+			cupy.cuda.Device(int(str(device).split(':')[-1])).use()
 
 	if args.model == 'resnet_mfcc':
 		model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)

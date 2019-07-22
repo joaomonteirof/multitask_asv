@@ -47,6 +47,8 @@ if args.model == 'resnet_lstm' or args.model == 'all':
 		print('resnet_lstm', mu.size(), out.size())
 if args.model == 'resnet_qrnn' or args.model == 'all':
 	device = get_freer_gpu()
+	import cupy
+	cupy.cuda.Device(int(str(device).split(':')[-1])).use()
 	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200).to(device)
 	model = model_.ResNet_qrnn(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax').to(device)
 	mu = model.forward(batch, inner=args.inner)
