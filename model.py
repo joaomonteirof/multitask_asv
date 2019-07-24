@@ -882,25 +882,38 @@ class TDNN_mod(nn.Module):
 
 class aspp_res(nn.Module):
 
-	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False, kernel_sizes=[5, 5, 5, 5, 3, 3], strides=[4, 4, 4, 2, 2, 2], dilations=[1, 2, 2, 4, 4, 4], fmaps_factor=128):
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super().__init__()
 
-		self.ASPP_blocks = nn.ModuleList()
 		self.delta = delta
 
-		for i in range(len(kernel_sizes)):
-			if i == 0:
-				self.ASPP_blocks.append(aspp_resblock(3*ncoef if delta else ncoef, fmaps_factor, kernel_sizes[i], strides[i], dilations, 3*ncoef if delta else ncoef, False))
-			else:
-				self.ASPP_blocks.append(aspp_resblock(i*fmaps_factor, (i+1)*fmaps_factor, kernel_sizes[i], strides[i], dilations, i*fmaps_factor, False))
-
-		self.lin = nn.Sequential(
-			nn.BatchNorm1d(768),
-			nn.ReLU(inplace=True),
-			nn.Linear(768, 512),
+		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Linear(512, n_z) )
+			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 1500, 1),
+			nn.BatchNorm1d(1500),
+			nn.ReLU(inplace=True))
+
+		self.ASPP_block = ASPP(1500, 1500)
+
+		self.pooling = StatisticalPooling()
+
+		self.post_pooling = nn.Sequential(nn.Conv1d(3000, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, n_z, 1) )
 
 		if proj_size>0 and sm_type!='none':
 			if sm_type=='softmax':
@@ -917,12 +930,12 @@ class aspp_res(nn.Module):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
-		for block in self.ASPP_blocks:
-			x = block(x)
+		x = self.model(x)
+		x = self.ASPP_block(x)
+		x = self.pooling(x)
+		x = self.post_pooling(x)
 
-		x = self.lin(x.mean(-1))
-
-		return x
+		return x.squeeze()
 
 class _ASPPModule(nn.Module):
 	def __init__(self, inplanes, planes, kernel_size, padding, dilation):
@@ -1002,41 +1015,85 @@ class ASPP(nn.Module):
 				m.weight.data.fill_(1)
 				m.bias.data.zero_()
 
-class aspp_resblock(nn.Module):
+class pyr_rnn(nn.Module):
+	def __init__(self, n_layers=5, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
+		super(pyr_rnn, self).__init__()
 
-	def __init__(self, in_channel, out_channel, kernel_size, stride, dilations, fmaps, dense=False):
+		self.delta=delta
 
-		super().__init__()
+		self.lstms = nn.ModuleList([nn.LSTM(3*ncoef if delta else ncoef, 256, 1, bidirectional=True, batch_first=True)])
 
-		padding = kernel_size // 2
+		for i in range(1,n_layers):
+			self.lstms.append(nn.LSTM(256*2*2, 256, 1, bidirectional=True, batch_first=True))
 
-		self.block1 = nn.Sequential(ASPP(in_channel, out_channel, dilations, fmaps, dense),
-					nn.Conv1d(out_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=padding, bias=False),
-					nn.BatchNorm1d(out_channel),
-					nn.ReLU(out_channel))
+		self.pooling = StatisticalPooling()
 
-		self.block2 = nn.Sequential(ASPP(out_channel, out_channel, dilations, fmaps, dense),
-					nn.Conv1d(out_channel, out_channel, kernel_size=kernel_size, stride=1, padding=padding, bias=False),
-					nn.BatchNorm1d(out_channel),
-					nn.ReLU(out_channel))
+		self.post_pooling = nn.Sequential(nn.Conv1d(256*2*2*2, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, n_z, 1) )
 
-		self._init_weight()
+		self.initialize_params()
 
-	def forward(self, x):
+		self.attention = SelfAttention(512)
 
-		out_1 = self.block1(x)
-		out_2 = self.block2(out_1)
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
 
-		y = out_1 + out_2
+	def initialize_params(self):
 
-		return y
+		for layer in self.modules():
+			if isinstance(layer, torch.nn.Conv2d):
+				init.kaiming_normal_(layer.weight, a=0, mode='fan_out')
+			elif isinstance(layer, torch.nn.Linear):
+				init.kaiming_uniform_(layer.weight)
+			elif isinstance(layer, torch.nn.BatchNorm2d) or isinstance(layer, torch.nn.BatchNorm1d):
+				layer.weight.data.fill_(1)
+				layer.bias.data.zero_()
 
+	def _make_layer(self, block, planes, num_blocks, stride):
+		strides = [stride] + [1]*(num_blocks-1)
+		layers = []
+		for stride in strides:
+			layers.append(block(self.in_planes, planes, stride))
+			self.in_planes = planes * block.expansion
+		return nn.Sequential(*layers)
 
-	def _init_weight(self):
-		for m in self.modules():
-			if isinstance(m, nn.Conv1d):
-				n = m.kernel_size[0] * m.out_channels
-				m.weight.data.normal_(0, math.sqrt(2. / n))
-			elif isinstance(m, nn.BatchNorm1d):
-				m.weight.data.fill_(1)
-				m.bias.data.zero_()
+	def forward(self, x, inner=False):
+
+		x=x.squeeze(1)
+
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+
+		x = x.permute(0,2,1)
+
+		batch_size = x.size(0)
+		seq_size = x.size(1)
+
+		h0 = torch.zeros(2, batch_size, 256)
+		c0 = torch.zeros(2, batch_size, 256)
+
+		if x.is_cuda:
+			h0 = h0.cuda(x.get_device())
+			c0 = c0.cuda(x.get_device())
+
+		for mod_ in self.lstms:
+			x, (h_, c_) = mod_(x, (h0, c0))
+			if x.size(1)%2>0:
+				x=x[:,:-1,:]
+			x = x.contiguous().view(x.size(0), -1, x.size(-1)*2)
+
+		x = self.pooling(x.transpose(1,2))
+
+		x = self.post_pooling(x)
+
+		return x.squeeze()

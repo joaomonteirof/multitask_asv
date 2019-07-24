@@ -37,7 +37,7 @@ if __name__ == '__main__':
 	parser.add_argument('--trials-path', type=str, default='./data/trials', metavar='Path', help='Path to trials file')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
-	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'TDNN_mod', 'transformer', 'aspp_res'], default='resnet_mfcc', help='Model arch according to input type')
+	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'TDNN_mod', 'transformer', 'aspp_res', 'pyr_rnn'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--scores-path', type=str, default='./scores.p', metavar='Path', help='Path for saving computed scores')
@@ -90,6 +90,8 @@ if __name__ == '__main__':
 			model = make_model(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 		elif args.model == 'aspp_res':
 			model = model_.aspp_res(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
+		elif args.model == 'pyr_rnn':
+			model = model_.pyr_rnn(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 
 		ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 		model.load_state_dict(ckpt['model_state'], strict=False)
