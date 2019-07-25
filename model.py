@@ -971,9 +971,7 @@ class aspp_res(nn.Module):
 
 		self.ASPP_block = ASPP(1500, 1500)
 
-		self.pooling = StatisticalPooling()
-
-		self.post_pooling = nn.Sequential(nn.Conv1d(3000, 512, 1),
+		self.post_pooling = nn.Sequential(nn.Conv1d(1500, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 512, 1),
@@ -998,7 +996,7 @@ class aspp_res(nn.Module):
 
 		x = self.model(x)
 		x = self.ASPP_block(x)
-		x = self.pooling(x)
+		x = x.mean(dim=2, keepdim=True)
 		x = self.post_pooling(x)
 
 		return x.squeeze()
