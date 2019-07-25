@@ -11,7 +11,7 @@ from transformer_encoder import *
 
 # Training settings
 parser = argparse.ArgumentParser(description='Test new architectures')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'se_resnet', 'TDNN', 'TDNN_mod', 'transformer', 'aspp_res', 'pyr_rnn', 'all'], default='all', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'se_resnet', 'TDNN', 'TDNN_mod', 'transformer', 'aspp_res', 'pyr_rnn', 'all'], default='all', help='Model arch according to input type')
 parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
@@ -142,3 +142,12 @@ if args.model == 'pyr_rnn' or args.model == 'all':
 	else:
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('pyr_rnn', mu.size(), out.size())
+if args.model == 'resnet_2d' or args.model == 'all':
+	batch = torch.rand(3, 3 if args.delta else 1, 40, 200)
+	model = model_.ResNet_2d(n_z=args.latent_size, delta=args.delta, proj_size=10, sm_type='softmax')
+	mu = model.forward(batch, inner=args.inner)
+	if args.inner:
+		print('resnet_2d', mu.size())
+	else:
+		out = model.out_proj(mu, torch.ones(mu.size(0)))
+		print('resnet_2d', mu.size(), out.size())
