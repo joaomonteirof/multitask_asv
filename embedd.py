@@ -142,7 +142,7 @@ if __name__ == '__main__':
 				embeddings[utt] = emb.detach().cpu().numpy().squeeze()
 
 				if args.eps>0.0:
-					embeddings[utt] += args.eps*np.random.randn(emb.size(1))
+					embeddings[utt] += args.eps*np.random.randn(embeddings[utt].shape[0])
 
 	print('Storing embeddings in output file')
 
