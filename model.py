@@ -900,6 +900,67 @@ class TDNN(nn.Module):
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 		return self.model(x.squeeze(1)).squeeze()
 
+class TDNN_multihead(nn.Module):
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, n_heads=4, sm_type='none', delta=False):
+		super(TDNN_multihead, self).__init__()
+		self.delta=delta
+
+		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 1500, 1),
+			nn.BatchNorm1d(1500),
+			nn.ReLU(inplace=True))
+
+		self.pooling = nn.ModuleList()
+
+		for i in range(n_heads):
+			self.pooling.append(SelfAttention(1500))
+
+		self.post_pooling = nn.Sequential(nn.Conv1d(1500*2*n_heads, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, n_z, 1) )
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+		# get output features at affine after stats pooling
+		# self.model = nn.Sequential(*list(self.model.children())[:-5])
+
+	def forward(self, x, inner=False):
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+
+		x = self.model(x.squeeze(1)).permute(0,2,1)
+
+		stats = []
+
+		for mod_ in self.pooling:
+			stats.append(mod_(x))
+
+		x = torch.cat(stats, 1).unsqueeze(-1)
+		x = self.post_pooling(x)
+
+		return x.squeeze(-1)
+
 class TDNN_mod(nn.Module):
 	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.py
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
