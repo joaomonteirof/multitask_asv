@@ -7,12 +7,13 @@ from tqdm import tqdm
 import os
 
 from utils.harvester import HardestNegativeTripletSelector, AllTripletSelector
-
+from utils.losses import LabelSmoothingLoss
 from utils.utils import compute_eer
+from utils.warmup_scheduler import GradualWarmupScheduler
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, patience, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, softmax=False, pretrain=False, mining=False, cuda=True, logger=None):
+	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, patience, label_smoothing, warmup_its, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, softmax=False, pretrain=False, mining=False, cuda=True, logger=None):
 		if checkpoint_path is None:
 			# Save to current directory
 			self.checkpoint_path = os.getcwd()
@@ -43,11 +44,17 @@ class TrainLoop(object):
 		self.history = {'train_loss': [], 'train_loss_batch': []}
 		self.logger = logger
 
+		if self.softmax:
+			if label_smoothing>0.0:
+				self.ce_criterion = LabelSmoothingLoss(label_smoothing, lbl_set_size=len(train_loader.dataset))
+			else:
+				self.ce_criterion = CrossEntropyLoss()
+
 		if self.valid_loader is not None:
 			self.history['valid_loss'] = []
-			self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.5, patience=patience, verbose=True if self.verbose>0 else False, threshold=1e-4, min_lr=1e-7)
+			self.after_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.5, patience=patience*len(train_loader.dataset)//(batch_size*5), verbose=True if self.verbose>0 else False, threshold=1e-4, min_lr=1e-7)
 		else:
-			self.scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[20, 100, 200, 300, 400], gamma=0.1)
+			self.after_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[3, 10, 50, 100]*len(train_loader.dataset)//(batch_size*5), gamma=0.1)
 
 		if self.softmax:
 			self.history['softmax_batch']=[]
@@ -55,6 +62,8 @@ class TrainLoop(object):
 
 		if checkpoint_epoch is not None:
 			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
+
+		self.scheduler = GradualWarmupScheduler(self.optimizer, total_epoch=warmup_its, multiplier=1.01, after_scheduler=self.after_scheduler)
 
 	def train(self, n_epochs=1, save_every=1):
 
@@ -83,9 +92,9 @@ class TrainLoop(object):
 					train_loss_epoch+=train_loss
 					ce_epoch+=ce
 					if self.logger:
-						self.logger.add_scalar('Train Loss', train_loss, self.total_iters)
-						self.logger.add_scalar('Triplet Loss', train_loss-ce, self.total_iters)
-						self.logger.add_scalar('Cross enropy', ce, self.total_iters)
+						self.logger.add_scalar('Train/Train Loss', train_loss, self.total_iters)
+						self.logger.add_scalar('Train/Triplet Loss', train_loss-ce, self.total_iters)
+						self.logger.add_scalar('Train/Cross enropy', ce, self.total_iters)
 					self.total_iters += 1
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
@@ -103,6 +112,7 @@ class TrainLoop(object):
 					ce_epoch+=ce
 					if self.logger:
 						self.logger.add_scalar('Cross enropy', ce, self.total_iters)
+					self.scheduler.step(epoch=self.total_iters, metrics=self.history['valid_loss'][-1])
 					self.total_iters += 1
 
 				self.history['train_loss'].append(ce_epoch/(t+1))
@@ -116,7 +126,8 @@ class TrainLoop(object):
 					self.history['train_loss_batch'].append(train_loss)
 					train_loss_epoch+=train_loss
 					if self.logger:
-						self.logger.add_scalar('Train Loss', train_loss, self.total_iters)
+						self.logger.add_scalar('Train/Train Loss', train_loss, self.total_iters)
+					self.scheduler.step(epoch=self.total_iters, metrics=self.history['valid_loss'][-1])
 					self.total_iters += 1
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
@@ -143,18 +154,16 @@ class TrainLoop(object):
 				if self.verbose>0:
 					print('Current validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss'][-1], np.min(self.history['valid_loss']), 1+np.argmin(self.history['valid_loss'])))
 				if self.logger:
-					self.logger.add_scalar('EER', self.history['valid_loss'][-1], self.total_iters-1)
-					self.logger.add_scalar('Best EER', np.min(self.history['valid_loss']), self.total_iters-1)
+					self.logger.add_scalar('Valid/EER', self.history['valid_loss'][-1], self.total_iters-1)
+					self.logger.add_scalar('Valid/Best EER', np.min(self.history['valid_loss']), self.total_iters-1)
 					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores, global_step=self.total_iters-1)
 					self.logger.add_embedding(mat=emb, metadata=list(y_), global_step=self.total_iters-1)
 
-				self.scheduler.step(self.history['valid_loss'][-1])
-
-			else:
-				self.scheduler.step()
-
 			if self.verbose>0:
 				print('Current LR: {}'.format(self.optimizer.param_groups[0]['lr']))
+
+				if self.logger:
+					self.logger.add_scalar('Info/LR', self.optimizer.param_groups[0]['lr'])
 
 			self.cur_epoch += 1
 
@@ -216,7 +225,7 @@ class TrainLoop(object):
 			loss -= entropy_regularizer*self.lambda_
 
 		if self.softmax:
-			ce = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
+			ce = self.ce_criterion(self.model.out_proj(embeddings_norm, y), y)
 			loss += ce
 			loss.backward()
 			self.optimizer.step()
@@ -245,7 +254,7 @@ class TrainLoop(object):
 		embeddings = self.model.forward(utterances)
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
-		loss = F.cross_entropy(self.model.out_proj(embeddings_norm, y), y)
+		loss = self.ce_criterion(self.model.out_proj(embeddings_norm, y), y)
 
 		loss.backward()
 		self.optimizer.step()
@@ -299,7 +308,7 @@ class TrainLoop(object):
 			print('Checkpointing...')
 		ckpt = {'model_state': self.model.state_dict(),
 		'optimizer_state': self.optimizer.state_dict(),
-		'scheduler_state': self.scheduler.state_dict(),
+		'scheduler_state': self.after_scheduler.state_dict(),
 		'history': self.history,
 		'total_iters': self.total_iters,
 		'cur_epoch': self.cur_epoch}
@@ -318,7 +327,7 @@ class TrainLoop(object):
 			# Load optimizer state
 			self.optimizer.load_state_dict(ckpt['optimizer_state'])
 			# Load scheduler state
-			self.scheduler.load_state_dict(ckpt['scheduler_state'])
+			self.after_scheduler.load_state_dict(ckpt['scheduler_state'])
 			# Load history
 			self.history = ckpt['history']
 			self.total_iters = ckpt['total_iters']
