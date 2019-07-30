@@ -112,7 +112,10 @@ class TrainLoop(object):
 					ce_epoch+=ce
 					if self.logger:
 						self.logger.add_scalar('Cross enropy', ce, self.total_iters)
-					self.scheduler.step(epoch=self.total_iters, metrics=self.history['valid_loss'][-1])
+					if self.valid_loader is not None:
+						self.scheduler.step(epoch=self.total_iters, metrics=self.history['valid_loss'][-1])
+					else:
+						self.scheduler.step(epoch=self.total_iters)
 					self.total_iters += 1
 
 				self.history['train_loss'].append(ce_epoch/(t+1))
@@ -127,7 +130,10 @@ class TrainLoop(object):
 					train_loss_epoch+=train_loss
 					if self.logger:
 						self.logger.add_scalar('Train/Train Loss', train_loss, self.total_iters)
-					self.scheduler.step(epoch=self.total_iters, metrics=self.history['valid_loss'][-1])
+					if self.valid_loader is not None:
+						self.scheduler.step(epoch=self.total_iters, metrics=self.history['valid_loss'][-1])
+					else:
+						self.scheduler.step(epoch=self.total_iters)
 					self.total_iters += 1
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
