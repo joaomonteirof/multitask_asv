@@ -80,28 +80,28 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, model, epochs, batc
 			print('Trial {}'.format(i+1))
 			print(' ')
 
-#		try:
-		cost = trainer.train(n_epochs=epochs, save_every=epochs+10)
+		try:
+			cost = trainer.train(n_epochs=epochs, save_every=epochs+10)
 
-		print(' ')
-		print('Best cost in file ' + cp_name + 'was: {}'.format(cost))
-		print(' ')
-		print('With hyperparameters:')
-		print('Selected model: {}'.format(model))
-		print('Batch size: {}'.format(batch_size))
-		print('LR: {}'.format(lr))
-		print('Momentum: {}'.format(momentum))
-		print('l2: {}'.format(l2))
-		print('lambda: {}'.format(lambda_))
-		print('Margin: {}'.format(margin))
-		print('Swap: {}'.format(swap))
-		print('Patience: {}'.format(patience))
-		print('Softmax Mode is: {}'.format(softmax))
-		print(' ')
+			print(' ')
+			print('Best cost in file ' + cp_name + 'was: {}'.format(cost))
+			print(' ')
+			print('With hyperparameters:')
+			print('Selected model: {}'.format(model))
+			print('Batch size: {}'.format(batch_size))
+			print('LR: {}'.format(lr))
+			print('Momentum: {}'.format(momentum))
+			print('l2: {}'.format(l2))
+			print('lambda: {}'.format(lambda_))
+			print('Margin: {}'.format(margin))
+			print('Swap: {}'.format(swap))
+			print('Patience: {}'.format(patience))
+			print('Softmax Mode is: {}'.format(softmax))
+			print(' ')
 
-		return cost
-#		except:
-#			pass
+			return cost
+		except:
+			pass
 
 	print('Returning dummy cost due to failures while training.')
 	return 0.99
