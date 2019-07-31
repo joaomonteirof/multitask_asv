@@ -4,6 +4,7 @@ import glob
 import torch
 import os
 import sys
+import pathlib
 from kaldi_io import read_mat_scp, open_or_fd, write_vec_flt
 import model as model_
 import scipy.io as sio
@@ -45,6 +46,8 @@ if __name__ == '__main__':
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
+
+	pathlib.Path(args.out_path).mkdir(parents=True, exist_ok=True)
 
 	if args.cp_path is None:
 		raise ValueError('There is no checkpoint/model path. Use arg --cp-path to indicate the path!')
