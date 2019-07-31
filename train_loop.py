@@ -95,6 +95,11 @@ class TrainLoop(object):
 						self.logger.add_scalar('Train/Train Loss', train_loss, self.total_iters)
 						self.logger.add_scalar('Train/Triplet Loss', train_loss-ce, self.total_iters)
 						self.logger.add_scalar('Train/Cross enropy', ce, self.total_iters)
+						self.logger.add_scalar('Info/LR', self.optimizer.param_groups[0]['lr'])
+					if self.valid_loader is not None:
+						self.scheduler.step(epoch=self.total_iters, metrics=self.history['valid_loss'][-1])
+					else:
+						self.scheduler.step(epoch=self.total_iters)
 					self.total_iters += 1
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
