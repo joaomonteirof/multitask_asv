@@ -200,12 +200,12 @@ class TrainLoop(object):
 
 		utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
 		utterances = torch.cat([utt_1, utt_2, utt_3, utt_4, utt_5], dim=0)
-		y = torch.cat(5*[y], dim=0).squeeze()
+		y = torch.cat(5*[y], dim=0).squeeze().contiguous()
 
 		entropy_indices = None
 
 		ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
-		utterances = utterances[:,:,:,:ridx]
+		utterances = utterances[:,:,:,:ridx].contiguous()
 
 		if self.cuda_mode:
 			utterances = utterances.to(self.device, non_blocking=True)
@@ -252,10 +252,10 @@ class TrainLoop(object):
 
 		utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
 		utterances = torch.cat([utt_1, utt_2, utt_3, utt_4, utt_5], dim=0)
-		y = torch.cat(5*[y], dim=0).squeeze()
+		y = torch.cat(5*[y], dim=0).squeeze().contiguous()
 
 		ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
-		utterances = utterances[:,:,:,:ridx]
+		utterances = utterances[:,:,:,:ridx].contiguous()
 
 		if self.cuda_mode:
 			utterances = utterances.to(self.device, non_blocking=True)
@@ -279,10 +279,10 @@ class TrainLoop(object):
 
 			utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
 			utterances = torch.cat([utt_1, utt_2, utt_3, utt_4, utt_5], dim=0)
-			y = torch.cat(5*[y], dim=0).squeeze()
+			y = torch.cat(5*[y], dim=0).squeeze().contiguous()
 
 			ridx = np.random.randint(utterances.size(3)//4, utterances.size(3))
-			utterances = utterances[:,:,:,:ridx]
+			utterances = utterances[:,:,:,:ridx].contiguous()
 
 			if self.cuda_mode:
 				utterances = utterances.to(self.device, non_blocking=True)
