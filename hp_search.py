@@ -56,10 +56,10 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 			cupy.cuda.Device(int(str(device).split(':')[-1])).use()
 
 	train_dataset = Loader(hdf5_name = train_hdf_file, max_nb_frames = int(n_frames), delta = delta)
-	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=n.workers, worker_init_fn=set_np_randomseed, pin_memory=True)
+	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=n.workers, worker_init_fn=set_np_randomseed)
 
 	valid_dataset = Loader_valid(hdf5_name = valid_hdf_file, max_nb_frames = int(n_frames), delta = delta)
-	valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=valid_batch_size, shuffle=True, num_workers=n_workers, worker_init_fn=set_np_randomseed, pin_memory=True)
+	valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=valid_batch_size, shuffle=True, num_workers=n_workers, worker_init_fn=set_np_randomseed)
 
 	if model == 'resnet_mfcc':
 		model=model_.ResNet_mfcc(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=ncoef, sm_type=softmax, delta=delta)
