@@ -112,7 +112,7 @@ class Loader_valid(Dataset):
 		utt_3_data = torch.from_numpy( self.prep_utterance( self.open_file[spk][utt_3] ) )
 		utt_4_data = torch.from_numpy( self.prep_utterance( self.open_file[spk][utt_4] ) )
 
-		return utt_data.contigouos(), utt_1_data.contigouos(), utt_2_data.contigouos(), utt_3_data.contigouos(), utt_4_data.contigouos(), self.utt2label[utt]
+		return utt_data.contiguous(), utt_1_data.contiguous(), utt_2_data.contiguous(), utt_3_data.contiguous(), utt_4_data.contiguous(), self.utt2label[utt]
 
 	def __len__(self):
 		return len(self.utt_list)
@@ -175,7 +175,7 @@ class Loader_test(Dataset):
 
 		assert len(utt_list_) == len(set(utt_list_))
 
-		return utt_1.contigouos(), utt_2.contigouos(), utt_3.contigouos(), utt_4.contigouos(), utt_5.contigouos(), spk, y
+		return utt_1.contiguous(), utt_2.contiguous(), utt_3.contiguous(), utt_4.contiguous(), utt_5.contiguous(), spk, y
 
 	def __len__(self):
 		return len(self.utt_list)
