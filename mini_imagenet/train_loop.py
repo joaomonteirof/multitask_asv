@@ -28,7 +28,7 @@ class TrainLoop(object):
 		self.optimizer = optimizer
 		self.train_loader = train_loader
 		self.valid_loader = valid_loader
-		self.history = {'train_loss': [], 'train_loss_batch': [], 'triplet_loss': [], 'triplet_loss_batch': [], 'ce_loss': [], 'ce_loss_batch': [],'ErrorRate': [], 'EER': []}
+		self.history = {'train_loss': [], 'train_loss_batch': [], 'triplet_loss': [], 'triplet_loss_batch': [], 'ce_loss': [], 'ce_loss_batch': [], 'EER': []}
 		self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.5, patience=patience, verbose=True if verbose>0 else False, threshold=1e-4, min_lr=1e-8)
 		self.total_iters = 0
 		self.cur_epoch = 0
@@ -82,13 +82,11 @@ class TrainLoop(object):
 
 			# Validation
 
-			tot_correct = 0
-			tot_ = 0
 			scores, labels = None, None
 
 			for t, batch in enumerate(self.valid_loader):
 
-				correct, total, scores_batch, labels_batch = self.valid(batch)
+				scores_batch, labels_batch = self.valid(batch)
 
 				try:
 					scores = np.concatenate([scores, scores_batch], 0)
@@ -96,26 +94,19 @@ class TrainLoop(object):
 				except:
 					scores, labels = scores_batch, labels_batch
 
-				tot_correct += correct
-				tot_ += total
-
 			self.history['EER'].append(compute_eer(labels, scores))
-			self.history['ErrorRate'].append(1.-float(tot_correct)/tot_)
 
 			if self.verbose>0:
 				print(' ')
-				print('Current, best validation error rate, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['ErrorRate'][-1], np.min(self.history['ErrorRate']), 1+np.argmin(self.history['ErrorRate'])))
-
-				print(' ')
 				print('Current, best validation EER, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['EER'][-1], np.min(self.history['EER']), 1+np.argmin(self.history['EER'])))
 
-			self.scheduler.step(self.history['ErrorRate'][-1])
+			self.scheduler.step(self.history['EER'][-1])
 
 			if self.verbose>0:
 				print(' ')
 				print('Current LR: {}'.format(self.optimizer.param_groups[0]['lr']))
 
-			if self.save_cp and (self.cur_epoch % save_every == 0 or (self.history['ErrorRate'][-1] < np.min([np.inf]+self.history['ErrorRate'][:-1])) or (self.history['EER'][-1] < np.min([np.inf]+self.history['EER'][:-1]))):
+			if self.save_cp and (self.cur_epoch % save_every == 0 or self.history['EER'][-1] < np.min([np.inf]+self.history['EER'][:-1])):
 				self.checkpointing()
 
 			self.cur_epoch += 1
@@ -124,10 +115,9 @@ class TrainLoop(object):
 			print('Training done!')
 
 			if self.valid_loader is not None:
-				print('Best error rate and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['ErrorRate']), 1+np.argmin(self.history['ErrorRate'])))
 				print('Best EER and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['EER']), 1+np.argmin(self.history['EER'])))
 
-		return np.min(self.history['ErrorRate'])
+		return np.min(self.history['EER'])
 
 	def train_step(self, batch):
 
@@ -188,10 +178,6 @@ class TrainLoop(object):
 
 			embeddings = self.model.forward(x)
 			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
-			out=self.model.out_proj(embeddings_norm, y)
-
-			pred = F.softmax(out, dim=1).max(1)[1].long()
-			correct = pred.squeeze().eq(y.squeeze()).detach().sum().item()
 
 			triplets_idx = self.harvester_val.get_triplets(embeddings, y)
 
@@ -204,7 +190,7 @@ class TrainLoop(object):
 			scores_p = F.cosine_similarity(emb_a, emb_p)
 			scores_n = F.cosine_similarity(emb_a, emb_n)
 
-		return correct, x.size(0), np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0)
+		return np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0)
 
 	def triplet_loss(self, emba, embp, embn, reduce_=True):
 
