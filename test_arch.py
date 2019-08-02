@@ -7,11 +7,10 @@ import torch.optim as optim
 import torch.utils.data
 import model as model_
 from utils.utils import *
-from transformer_encoder import *
 
 # Training settings
 parser = argparse.ArgumentParser(description='Test new architectures')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'se_resnet', 'TDNN', 'TDNN_mod', 'TDNN_multihead', 'transformer', 'aspp_res', 'pyr_rnn', 'all'], default='all', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'all'], default='all', help='Model arch according to input type')
 parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
@@ -45,7 +44,7 @@ if args.model == 'resnet_lstm' or args.model == 'all':
 	else:
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('resnet_lstm', mu.size(), out.size())
-if args.model == 'resnet_qrnn' or args.model == 'all':
+if args.model == 'resnet_qrnn' or args.model == 'all' and torch.cuda.is_available():
 	device = get_freer_gpu()
 	import cupy
 	cupy.cuda.Device(int(str(device).split(':')[-1])).use()
@@ -84,15 +83,15 @@ if args.model == 'resnet_small' or args.model == 'all':
 	else:
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('resnet_small', mu.size(), out.size())
-if args.model == 'se_resnet' or args.model == 'all':
-	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
-	model = model_.SE_ResNet(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
+if args.model == 'resnet_2d' or args.model == 'all':
+	batch = torch.rand(3, 3 if args.delta else 1, 40, 200)
+	model = model_.ResNet_2d(n_z=args.latent_size, delta=args.delta, proj_size=10, sm_type='softmax')
 	mu = model.forward(batch, inner=args.inner)
 	if args.inner:
-		print('se_resnet', mu.size())
+		print('resnet_2d', mu.size())
 	else:
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
-		print('se_resnet', mu.size(), out.size())
+		print('resnet_2d', mu.size(), out.size())
 if args.model == 'TDNN' or args.model == 'all':
 	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
 	model = model_.TDNN(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
@@ -104,17 +103,17 @@ if args.model == 'TDNN' or args.model == 'all':
 		mu = model.forward(batch, inner=args.inner)
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('TDNN', mu.size(), out.size())
-if args.model == 'TDNN_mod' or args.model == 'all':
+if args.model == 'TDNN_att' or args.model == 'all':
 	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
-	model = model_.TDNN_mod(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
+	model = model_.TDNN_att(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
 	if args.inner:
-		model.model = torch.nn.Sequential(*list(model.model.children())[:-5])
+		model.post_pooling = torch.nn.Sequential(*list(model.post_pooling.children())[:-5])
 		mu = model.forward(batch, inner=args.inner)
-		print('TDNN_mod', mu.size())
+		print('TDNN_att', mu.size())
 	else:
 		mu = model.forward(batch, inner=args.inner)
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
-		print('TDNN_mod', mu.size(), out.size())
+		print('TDNN_att', mu.size(), out.size())
 if args.model == 'TDNN_multihead' or args.model == 'all':
 	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
 	model = model_.TDNN_multihead(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
@@ -126,39 +125,36 @@ if args.model == 'TDNN_multihead' or args.model == 'all':
 		mu = model.forward(batch, inner=args.inner)
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('TDNN_multihead', mu.size(), out.size())
-if args.model == 'transformer' or args.model == 'all':
+if args.model == 'TDNN_lstm' or args.model == 'all':
 	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
-	model = make_model(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
-	mu = model.forward(batch, inner=args.inner)
+	model = model_.TDNN_lstm(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
 	if args.inner:
-		print('transformer', mu.size())
+		model.post_pooling = torch.nn.Sequential(*list(model.post_pooling.children())[:-5])
+		mu = model.forward(batch, inner=args.inner)
+		print('TDNN_lstm', mu.size())
 	else:
+		mu = model.forward(batch, inner=args.inner)
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
-		print('transformer', mu.size(), out.size())
-if args.model == 'aspp_res' or args.model == 'all':
+		print('TDNN_lstm', mu.size(), out.size())
+if args.model == 'TDNN_aspp' or args.model == 'all':
 	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
-	model = model_.aspp_res(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
-	mu = model.forward(batch, inner=args.inner)
+	model = model_.TDNN_aspp(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
 	if args.inner:
-		print('aspp_res', mu.size())
+		model.post_pooling = torch.nn.Sequential(*list(model.post_pooling.children())[:-5])
+		mu = model.forward(batch, inner=args.inner)
+		print('TDNN_aspp', mu.size())
 	else:
+		mu = model.forward(batch, inner=args.inner)
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
-		print('aspp_res', mu.size(), out.size())
-if args.model == 'pyr_rnn' or args.model == 'all':
+		print('TDNN_aspp', mu.size(), out.size())
+if args.model == 'TDNN_mod' or args.model == 'all':
 	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
-	model = model_.pyr_rnn(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
-	mu = model.forward(batch, inner=args.inner)
+	model = model_.TDNN_mod(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
 	if args.inner:
-		print('pyr_rnn', mu.size())
+		model.model = torch.nn.Sequential(*list(model.model.children())[:-5])
+		mu = model.forward(batch, inner=args.inner)
+		print('TDNN_mod', mu.size())
 	else:
+		mu = model.forward(batch, inner=args.inner)
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
-		print('pyr_rnn', mu.size(), out.size())
-if args.model == 'resnet_2d' or args.model == 'all':
-	batch = torch.rand(3, 3 if args.delta else 1, 40, 200)
-	model = model_.ResNet_2d(n_z=args.latent_size, delta=args.delta, proj_size=10, sm_type='softmax')
-	mu = model.forward(batch, inner=args.inner)
-	if args.inner:
-		print('resnet_2d', mu.size())
-	else:
-		out = model.out_proj(mu, torch.ones(mu.size(0)))
-		print('resnet_2d', mu.size(), out.size())
+		print('TDNN_mod', mu.size(), out.size())

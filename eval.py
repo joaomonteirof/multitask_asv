@@ -9,7 +9,6 @@ import glob
 import pickle
 import os
 import sys
-from transformer_encoder import *
 from utils.utils import *
 from librosa.feature import delta
 
@@ -37,7 +36,7 @@ if __name__ == '__main__':
 	parser.add_argument('--trials-path', type=str, default='./data/trials', metavar='Path', help='Path to trials file')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
-	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'se_resnet', 'TDNN', 'TDNN_mod', 'TDNN_multihead', 'transformer', 'aspp_res', 'pyr_rnn'], default='resnet_mfcc', help='Model arch according to input type')
+	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--scores-path', type=str, default='./scores.p', metavar='Path', help='Path for saving computed scores')
@@ -82,20 +81,18 @@ if __name__ == '__main__':
 			model = model_.ResNet_small(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 		elif args.model == 'resnet_2d':
 			model = model_.ResNet_2d(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		elif args.model == 'se_resnet':
-			model = model_.SE_ResNet(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 		elif args.model == 'TDNN':
 			model = model_.TDNN(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		elif args.model == 'TDNN_mod':
-			model = model_.TDNN_mod(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
+		elif args.model == 'TDNN_att':
+			model = model_.TDNN_att(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 		elif args.model == 'TDNN_multihead':
 			model = model_.TDNN_multihead(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		elif args.model == 'transformer':
-			model = make_model(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		elif args.model == 'aspp_res':
-			model = model_.aspp_res(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		elif args.model == 'pyr_rnn':
-			model = model_.pyr_rnn(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
+		elif args.model == 'TDNN_lstm':
+			model = model_.TDNN_lstm(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
+		elif args.model == 'TDNN_aspp':
+			model = model_.TDNN_aspp(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
+		elif args.model == 'TDNN_mod':
+			model = model_.TDNN_mod(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 
 		ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 		model.load_state_dict(ckpt['model_state'], strict=False)

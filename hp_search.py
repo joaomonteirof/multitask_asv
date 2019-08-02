@@ -11,7 +11,6 @@ import numpy as np
 from data_load import Loader, Loader_valid
 import os
 import sys
-from transformer_encoder import *
 from utils.utils import *
 
 def get_file_name(dir_):
@@ -36,7 +35,7 @@ parser.add_argument('--valid-batch-size', type=int, default=64, metavar='N', hel
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'se_resnet', 'TDNN', 'TDNN_mod', 'TDNN_multihead', 'transformer', 'aspp_res', 'pyr_rnn', 'all'], default='resnet_mfcc', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'all'], default='resnet_mfcc', help='Model arch according to input type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -77,20 +76,18 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 		model = model_.ResNet_small(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'resnet_2d':
 		model = model_.ResNet_2d(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
-	elif args.model == 'se_resnet':
-		model = model_.SE_ResNet(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'TDNN':
 		model = model_.TDNN(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
-	elif args.model == 'TDNN_mod':
-		model = model_.TDNN_mod(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
+	elif args.model == 'TDNN_att':
+		model = model_.TDNN_att(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'TDNN_multihead':
 		model = model_.TDNN_multihead(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
-	elif args.model == 'transformer':
-		model = make_model(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
-	elif args.model == 'aspp_res':
-		model = model_.aspp_res(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
-	elif args.model == 'pyr_rnn':
-		model = model_.pyr_rnn(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
+	elif args.model == 'TDNN_lstm':
+		model = model_.TDNN_lstm(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
+	elif args.model == 'TDNN_aspp':
+		model = model_.TDNN_aspp(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
+	elif args.model == 'TDNN_mod':
+		model = model_.TDNN_mod(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 
 	if cuda:
 		model=model.to(device)
@@ -112,7 +109,7 @@ patience=instru.var.OrderedDiscrete([2, 5, 8, 10])
 swap=instru.var.OrderedDiscrete([True, False])
 latent_size=instru.var.OrderedDiscrete([64, 128, 256, 512])
 n_frames=instru.var.OrderedDiscrete([300, 400, 500, 600, 800])
-model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'se_resnet', 'TDNN', 'TDNN_mod', 'TDNN_multihead', 'transformer', 'aspp_res', 'pyr_rnn']) if args.model=='all' else args.model
+model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod']) if args.model=='all' else args.model
 ncoef=args.ncoef
 epochs=args.epochs
 batch_size=args.batch_size

@@ -40,95 +40,6 @@ class SelfAttention(nn.Module):
 
 		return representations
 
-class SELayer(nn.Module):
-	def __init__(self, channel, reduction=16):
-		super(SELayer, self).__init__()
-		self.avg_pool = nn.AdaptiveAvgPool2d(1)
-		self.fc = nn.Sequential(
-			nn.Linear(channel, channel // reduction, bias=False),
-			nn.ReLU(inplace=True),
-			nn.Linear(channel // reduction, channel, bias=False),
-			nn.Sigmoid() )
-
-	def forward(self, x):
-		b, c, _, _ = x.size()
-		y = self.avg_pool(x).view(b, c)
-		y = self.fc(y).view(b, c, 1, 1)
-		return x * y.expand_as(x)
-
-class SEBasicBlock(nn.Module):
-	expansion = 1
-
-	def __init__(self, inplanes, planes, stride=1, downsample=None, reduction=16):
-		super(SEBasicBlock, self).__init__()
-		self.conv1 = conv3x3(inplanes, planes, stride)
-		self.bn1 = nn.BatchNorm2d(planes)
-		self.relu = nn.ReLU(inplace=True)
-		self.conv2 = conv3x3(planes, planes, 1)
-		self.bn2 = nn.BatchNorm2d(planes)
-		self.se = SELayer(planes, reduction)
-		self.downsample = downsample
-		self.stride = stride
-
-	def forward(self, x):
-		residual = x
-		out = self.conv1(x)
-		out = self.bn1(out)
-		out = self.relu(out)
-
-		out = self.conv2(out)
-		out = self.bn2(out)
-		out = self.se(out)
-
-		if self.downsample is not None:
-			residual = self.downsample(x)
-
-		out += residual
-		out = self.relu(out)
-
-		return out
-
-
-class SEBottleneck(nn.Module):
-	expansion = 4
-
-	def __init__(self, inplanes, planes, stride=1, downsample=None, reduction=16):
-		super(SEBottleneck, self).__init__()
-		self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
-		self.bn1 = nn.BatchNorm2d(planes)
-		self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-							   padding=1, bias=False)
-		self.bn2 = nn.BatchNorm2d(planes)
-		self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
-		self.bn3 = nn.BatchNorm2d(planes * 4)
-		self.relu = nn.ReLU(inplace=True)
-		self.se = SELayer(planes * 4, reduction)
-		self.downsample = downsample
-		self.stride = stride
-
-	def forward(self, x):
-		residual = x
-
-		out = self.conv1(x)
-		out = self.bn1(out)
-		out = self.relu(out)
-
-		out = self.conv2(out)
-		out = self.bn2(out)
-		out = self.relu(out)
-
-		out = self.conv3(out)
-		out = self.bn3(out)
-		out = self.se(out)
-
-		if self.downsample is not None:
-			residual = self.downsample(x)
-
-		out += residual
-		out = self.relu(out)
-
-		return out
-
 class BasicBlock(nn.Module):
 	expansion = 1
 
@@ -775,78 +686,6 @@ class ResNet_2d(nn.Module):
 		mu = self.fc_mu(fc)
 		return fc if inner else mu
 
-class SE_ResNet(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=SEBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
-		self.inplanes = 32
-		super(SE_ResNet, self).__init__()
-
-		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(32)
-		self.activation = nn.ReLU()
-
-		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
-		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-		self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-
-		self.fc = nn.Linear(block.expansion*512*2,512)
-		self.lbn = nn.BatchNorm1d(512)
-
-		self.fc_mu = nn.Linear(512, n_z)
-
-		self.initialize_params()
-
-		self.attention = SelfAttention(block.expansion*512)
-
-		if proj_size>0 and sm_type!='none':
-			if sm_type=='softmax':
-				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
-			elif sm_type=='am_softmax':
-				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
-			else:
-				raise NotImplementedError
-
-	def initialize_params(self):
-
-		for layer in self.modules():
-			if isinstance(layer, torch.nn.Conv2d):
-				init.kaiming_normal_(layer.weight, a=0, mode='fan_out')
-			elif isinstance(layer, torch.nn.Linear):
-				init.kaiming_uniform_(layer.weight)
-			elif isinstance(layer, torch.nn.BatchNorm2d) or isinstance(layer, torch.nn.BatchNorm1d):
-				layer.weight.data.fill_(1)
-				layer.bias.data.zero_()
-
-	def _make_layer(self, block, planes, blocks, stride=1):
-		downsample = None
-		if stride != 1 or self.inplanes != planes * block.expansion:
-			downsample = nn.Sequential(nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride, bias=False), nn.BatchNorm2d(planes * block.expansion) )
-
-		layers = []
-		layers.append(block(self.inplanes, planes, stride, downsample))
-		self.inplanes = planes * block.expansion
-		for i in range(1, blocks):
-			layers.append(block(self.inplanes, planes))
-
-		return nn.Sequential(*layers)
-
-	def forward(self, x, inner=False):
-
-		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
-		x = self.layer1(x)
-		x = self.layer2(x)
-		x = self.layer3(x)
-		x = self.layer4(x)
-		x = x.squeeze(2)
-
-		stats = self.attention(x.permute(0,2,1).contiguous())
-
-		fc = F.relu(self.lbn(self.fc(stats)))
-
-		mu = self.fc_mu(fc)
-		return fc if inner else mu
-
 class StatisticalPooling(nn.Module):
 
 	def forward(self, x):
@@ -899,6 +738,58 @@ class TDNN(nn.Module):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 		return self.model(x.squeeze(1)).squeeze()
+
+class TDNN_att(nn.Module):
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
+		super(TDNN_att, self).__init__()
+		self.delta=delta
+
+		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 1500, 1),
+			nn.BatchNorm1d(1500),
+			nn.ReLU(inplace=True))
+
+		self.pooling = SelfAttention(1500)
+
+		self.post_pooling = nn.Sequential(nn.Conv1d(1500*2, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, n_z, 1) )
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+		# get output features at affine after stats pooling
+		# self.model = nn.Sequential(*list(self.model.children())[:-5])
+
+	def forward(self, x, inner=False):
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+
+		x = self.model(x.squeeze(1)).permute(0,2,1)
+		stats = self.pooling(x).unsqueeze(-1)
+		x = self.post_pooling(stats)
+
+		return x.squeeze(-1)
 
 class TDNN_multihead(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, n_heads=4, sm_type='none', delta=False):
@@ -961,28 +852,31 @@ class TDNN_multihead(nn.Module):
 
 		return x.squeeze(-1)
 
-class TDNN_mod(nn.Module):
-	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.py
+class TDNN_lstm(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
-		super(TDNN_mod, self).__init__()
+		super(TDNN_lstm, self).__init__()
 		self.delta=delta
+
 		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 5, padding=2),
+			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 5, padding=3),
+			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 7),
+			nn.Conv1d(512, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 1500, 1),
 			nn.BatchNorm1d(1500),
-			nn.ReLU(inplace=True),
-			StatisticalPooling(),
-			nn.Conv1d(3000, 512, 1),
+			nn.ReLU(inplace=True))
+
+		self.pooling = nn.LSTM(1500, 512, 2, bidirectional=True, batch_first=False)
+		self.attention = SelfAttention(1024)
+
+		self.post_pooling = nn.Sequential(nn.Conv1d(2560, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 512, 1),
@@ -1004,10 +898,30 @@ class TDNN_mod(nn.Module):
 	def forward(self, x, inner=False):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
-		return self.model(x.squeeze(1)).squeeze()
 
+		x = self.model(x.squeeze(1)).permute(0,2,1)
 
-class aspp_res(nn.Module):
+		x = x.permute(1,0,2)
+
+		batch_size = x.size(1)
+		seq_size = x.size(0)
+
+		h0 = torch.zeros(2*2, batch_size, 512)
+		c0 = torch.zeros(2*2, batch_size, 512)
+
+		if x.is_cuda:
+			h0 = h0.cuda(x.get_device())
+			c0 = c0.cuda(x.get_device())
+
+		out_seq, (h_, c_) = self.pooling(x, (h0, c0))
+
+		stats = self.attention(out_seq.permute(1,0,2).contiguous())
+		x = torch.cat([stats,h_.mean(0)],dim=1).unsqueeze(-1)
+		x = self.post_pooling(x)
+
+		return x.squeeze(-1)
+
+class TDNN_aspp(nn.Module):
 
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super().__init__()
@@ -1061,6 +975,51 @@ class aspp_res(nn.Module):
 		x = self.post_pooling(x)
 
 		return x.squeeze()
+
+class TDNN_mod(nn.Module):
+	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.py
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
+		super(TDNN_mod, self).__init__()
+		self.delta=delta
+		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 5, padding=3),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 7),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 1500, 1),
+			nn.BatchNorm1d(1500),
+			nn.ReLU(inplace=True),
+			StatisticalPooling(),
+			nn.Conv1d(3000, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, n_z, 1) )
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+		# get output features at affine after stats pooling
+		# self.model = nn.Sequential(*list(self.model.children())[:-5])
+
+	def forward(self, x, inner=False):
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+		return self.model(x.squeeze(1)).squeeze()
 
 class _ASPPModule(nn.Module):
 	def __init__(self, inplanes, planes, kernel_size, padding, dilation):
@@ -1139,86 +1098,3 @@ class ASPP(nn.Module):
 			elif isinstance(m, nn.BatchNorm1d):
 				m.weight.data.fill_(1)
 				m.bias.data.zero_()
-
-class pyr_rnn(nn.Module):
-	def __init__(self, n_layers=5, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
-		super(pyr_rnn, self).__init__()
-
-		self.delta=delta
-
-		self.lstms = nn.ModuleList([nn.LSTM(3*ncoef if delta else ncoef, 256, 1, bidirectional=True, batch_first=True)])
-
-		for i in range(1,n_layers):
-			self.lstms.append(nn.LSTM(256*2*2, 256, 1, bidirectional=True, batch_first=True))
-
-		self.pooling = StatisticalPooling()
-
-		self.post_pooling = nn.Sequential(nn.Conv1d(256*2*2*2, 512, 1),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, n_z, 1) )
-
-		self.initialize_params()
-
-		self.attention = SelfAttention(512)
-
-		if proj_size>0 and sm_type!='none':
-			if sm_type=='softmax':
-				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
-			elif sm_type=='am_softmax':
-				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
-			else:
-				raise NotImplementedError
-
-	def initialize_params(self):
-
-		for layer in self.modules():
-			if isinstance(layer, torch.nn.Conv2d):
-				init.kaiming_normal_(layer.weight, a=0, mode='fan_out')
-			elif isinstance(layer, torch.nn.Linear):
-				init.kaiming_uniform_(layer.weight)
-			elif isinstance(layer, torch.nn.BatchNorm2d) or isinstance(layer, torch.nn.BatchNorm1d):
-				layer.weight.data.fill_(1)
-				layer.bias.data.zero_()
-
-	def _make_layer(self, block, planes, num_blocks, stride):
-		strides = [stride] + [1]*(num_blocks-1)
-		layers = []
-		for stride in strides:
-			layers.append(block(self.in_planes, planes, stride))
-			self.in_planes = planes * block.expansion
-		return nn.Sequential(*layers)
-
-	def forward(self, x, inner=False):
-
-		x=x.squeeze(1)
-
-		if self.delta:
-			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
-
-		x = x.permute(0,2,1)
-
-		batch_size = x.size(0)
-		seq_size = x.size(1)
-
-		h0 = torch.zeros(2, batch_size, 256)
-		c0 = torch.zeros(2, batch_size, 256)
-
-		if x.is_cuda:
-			h0 = h0.cuda(x.get_device())
-			c0 = c0.cuda(x.get_device())
-
-		for mod_ in self.lstms:
-			x, (h_, c_) = mod_(x, (h0, c0))
-			if x.size(1)%2>0:
-				x=x[:,:-1,:]
-			x = x.contiguous().view(x.size(0), -1, x.size(-1)*2)
-
-		x = self.pooling(x.transpose(1,2))
-
-		x = self.post_pooling(x)
-
-		return x.squeeze()
