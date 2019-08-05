@@ -54,9 +54,9 @@ class TrainLoop(object):
 
 		if self.valid_loader is not None:
 			self.history['valid_loss'] = []
-			self.after_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.5, patience=patience*its_per_epoch, verbose=True if self.verbose>0 else False, threshold=1e-4, min_lr=1e-7)
+			self.after_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.5, patience=patience*(1+its_per_epoch), verbose=True if self.verbose>0 else False, threshold=1e-4, min_lr=1e-7)
 		else:
-			self.after_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[3, 10, 50, 100]*its_per_epoch, gamma=0.1)
+			self.after_scheduler = torch.optim.lr_scheduler.MultiStepLR(self.optimizer, milestones=[3, 10, 50, 100]*(1+its_per_epoch), gamma=0.1)
 
 		if self.softmax:
 			self.history['softmax_batch']=[]
