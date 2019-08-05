@@ -172,7 +172,14 @@ class TrainLoop(object):
 					self.logger.add_scalar('Valid/EER', self.history['valid_loss'][-1], self.total_iters-1)
 					self.logger.add_scalar('Valid/Best EER', np.min(self.history['valid_loss']), self.total_iters-1)
 					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores, global_step=self.total_iters-1)
+
+					if emb.shape[0]>20000:
+						idxs = np.random.choice(np.arange(emb.shape[0]), size=20000, replace=False)
+
+					emb, y_ = emb[idxs, :], y_[idxs]
+
 					self.logger.add_embedding(mat=emb, metadata=list(y_), global_step=self.total_iters-1)
+					self.logger.add_histogram('Valid/Embeddings', values=emb, global_step=self.total_iters-1)
 
 			if self.verbose>0:
 				print('Current LR: {}'.format(self.optimizer.param_groups[0]['lr']))
