@@ -733,7 +733,7 @@ class TDNN(nn.Module):
 	def forward(self, x, inner=False):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
-		return self.model(x.squeeze(1)).squeeze()
+		return self.model(x.squeeze(1)).squeeze(-1)
 
 class TDNN_att(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -970,7 +970,7 @@ class TDNN_aspp(nn.Module):
 		x = x.mean(dim=2, keepdim=True)
 		x = self.post_pooling(x)
 
-		return x.squeeze()
+		return x.squeeze(-1)
 
 class TDNN_mod(nn.Module):
 	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.py
@@ -1015,7 +1015,7 @@ class TDNN_mod(nn.Module):
 	def forward(self, x, inner=False):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
-		return self.model(x.squeeze(1)).squeeze()
+		return self.model(x.squeeze(1)).squeeze(-1)
 
 class _ASPPModule(nn.Module):
 	def __init__(self, inplanes, planes, kernel_size, padding, dilation):

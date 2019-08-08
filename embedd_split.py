@@ -21,7 +21,7 @@ def prep_feats(data_, seg_len=300, delta=False):
 		features = np.tile(features, (1, mul))
 		features = features[:, :seg_len]
 
-	idxs = strided_app(np.arange(features.shape[1]), seg_len, min(seg_len//2, abs(seg_len-features.shape[1]+1)))
+	idxs = strided_app( np.arange(features.shape[1]), seg_len, max( min( seg_len//2, abs( seg_len-(features.shape[1]+1) ) ), 1 ) )
 
 	features = features[np.newaxis, :, :]
 
@@ -45,6 +45,7 @@ if __name__ == '__main__':
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
+	parser.add_argument('--seg-len', type=int, default=300, metavar='N', help='Segment length (default: 300)')
 	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
 	parser.add_argument('--eps', type=float, default=0.0, metavar='eps', help='Add noise to embeddings')
 	parser.add_argument('--inner', action='store_true', default=False, help='Get embeddings from inner layer')
@@ -140,7 +141,7 @@ if __name__ == '__main__':
 						print('Skipping utterance '+ utt)
 						continue
 
-				feats = prep_feats(data[utt], args.delta)
+				feats = prep_feats(data_=data[utt], seg_len=args.seg_len, delta=args.delta)
 
 				try:
 					if args.cuda:
@@ -156,6 +157,8 @@ if __name__ == '__main__':
 					emb = model.forward(feats, inner=args.inner)
 
 				embeddings[utt] = emb.mean(0).detach().cpu().numpy().squeeze()
+
+				print('emb', embeddings[utt].shape)
 
 				if args.eps>0.0:
 					embeddings[utt] += args.eps*np.random.randn(embeddings[utt].shape[0])
