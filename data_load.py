@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from librosa.feature import delta
+from librosa.feature import delta as delta_
 from utils.utils import strided_app
 
 class Loader(Dataset):
@@ -47,7 +47,7 @@ class Loader(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
+			data_ = np.concatenate([data_, delta_(data_,width=3,order=1), delta_(data_,width=3,order=2)], axis=0)
 
 		return data_
 
@@ -128,7 +128,7 @@ class Loader_valid(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
+			data_ = np.concatenate([data_, delta_(data_,width=3,order=1), delta_(data_,width=3,order=2)], axis=0)
 
 		return data_
 
@@ -191,7 +191,7 @@ class Loader_test(Dataset):
 			data_ = data_[:, :, :self.max_nb_frames]
 
 		if self.delta:
-			data_ = np.concatenate([data_, delta(data_,width=3,order=1), delta(data_,width=3,order=2)], axis=0)
+			data_ = np.concatenate([data_, delta_(data_,width=3,order=1), delta_(data_,width=3,order=2)], axis=0)
 
 		return data_
 

@@ -10,7 +10,7 @@ import pickle
 import os
 import sys
 from utils.utils import *
-from librosa.feature import delta
+from librosa.feature import delta as delta_
 
 def prep_feats(data_, delta=False):
 
@@ -24,7 +24,7 @@ def prep_feats(data_, delta=False):
 	features = features[np.newaxis, :, :]
 
 	if delta:
-		features = np.concatenate([features, delta(features,width=3,order=1), delta(features,width=3,order=2)], axis=0)
+		features = np.concatenate([features, delta_(features,width=3,order=1), delta_(features,width=3,order=2)], axis=0)
 
 	return torch.from_numpy(features[np.newaxis, :, :, :]).float()
 

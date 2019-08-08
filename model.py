@@ -628,7 +628,7 @@ class ResNet_2d(nn.Module):
 		self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
 		self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
-		self.conv_out = nn.Conv2d(block.expansion*512, 512, kernel_size=(5,1), stride=1, padding=0, bias=False)
+		self.conv_out = nn.Conv2d(block.expansion*512, 512, kernel_size=(6,1), stride=1, padding=0, bias=False)
 
 		self.fc = nn.Linear(512*2,512)
 		self.lbn = nn.BatchNorm1d(512)

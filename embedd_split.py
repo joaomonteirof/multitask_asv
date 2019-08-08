@@ -11,23 +11,29 @@ import scipy.io as sio
 from utils.utils import *
 from librosa.feature import delta as delta_
 
-def prep_feats(data_, delta=False):
-
-	#data_ = ( data_ - data_.mean(0) ) / data_.std(0)
+def prep_feats(data_, seg_len=300, delta=False):
 
 	features = data_.T
+	idxs = features.shape[1]
 
-	if features.shape[1]<50:
-		mul = int(np.ceil(50/features.shape[1]))
+	if features.shape[1]<seg_len:
+		mul = int(np.ceil(seg_len/features.shape[1]))
 		features = np.tile(features, (1, mul))
-		features = features[:, :50]
+		features = features[:, :seg_len]
+
+	idxs = strided_app(np.arange(features.shape[1]), seg_len, min(seg_len//2, abs(seg_len-features.shape[1]+1)))
 
 	features = features[np.newaxis, :, :]
 
 	if delta:
 		features = np.concatenate([features, delta_(features,width=3,order=1), delta_(features,width=3,order=2)], axis=0)
 
-	return torch.from_numpy(features[np.newaxis, :, :, :]).float()
+	feature_list = []
+
+	for idx in idxs:
+		feature_list.append( torch.from_numpy(features[np.newaxis, :, :, idx]).float() )
+
+	return torch.cat(feature_list, 0)
 
 if __name__ == '__main__':
 
@@ -149,7 +155,7 @@ if __name__ == '__main__':
 
 					emb = model.forward(feats, inner=args.inner)
 
-				embeddings[utt] = emb.detach().cpu().numpy().squeeze()
+				embeddings[utt] = emb.mean(0).detach().cpu().numpy().squeeze()
 
 				if args.eps>0.0:
 					embeddings[utt] += args.eps*np.random.randn(embeddings[utt].shape[0])

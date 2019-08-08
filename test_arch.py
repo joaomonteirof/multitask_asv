@@ -84,7 +84,7 @@ if args.model == 'resnet_small' or args.model == 'all':
 		out = model.out_proj(mu, torch.ones(mu.size(0)))
 		print('resnet_small', mu.size(), out.size())
 if args.model == 'resnet_2d' or args.model == 'all':
-	batch = torch.rand(3, 3 if args.delta else 1, 40, 200)
+	batch = torch.rand(3, 3 if args.delta else 1, 43, 200)
 	model = model_.ResNet_2d(n_z=args.latent_size, delta=args.delta, proj_size=10, sm_type='softmax')
 	mu = model.forward(batch, inner=args.inner)
 	if args.inner:
