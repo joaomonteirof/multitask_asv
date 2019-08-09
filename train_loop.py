@@ -242,6 +242,8 @@ class TrainLoop(object):
 		if entropy_indices is not None:
 			entropy_regularizer = torch.nn.functional.pairwise_distance(embeddings_norm, embeddings_norm[entropy_indices,:]).mean()
 			loss -= entropy_regularizer*self.lambda_
+			if self.logger:
+				self.logger.add_scalar('Train/Entropy reg.', entropy_regularizer.item(), self.total_iters)
 
 		if self.softmax:
 			ce = self.ce_criterion(self.model.out_proj(embeddings_norm, y), y)
