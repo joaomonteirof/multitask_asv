@@ -240,7 +240,7 @@ class TrainLoop(object):
 		loss_log = loss.item()
 
 		if entropy_indices is not None:
-			entropy_regularizer = torch.nn.functional.pairwise_distance(embeddings_norm, embeddings_norm[entropy_indices,:]).mean()
+			entropy_regularizer = torch.log(torch.nn.functional.pairwise_distance(embeddings_norm, embeddings_norm[entropy_indices,:])+1e-6).mean()
 			loss -= entropy_regularizer*self.lambda_
 			if self.logger:
 				self.logger.add_scalar('Train/Entropy reg.', entropy_regularizer.item(), self.total_iters)
