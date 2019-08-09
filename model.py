@@ -1,5 +1,3 @@
-## SE stuff from https://github.com/moskomule/senet.pytorch/blob/master/senet/se_resnet.py
-
 import math
 import torch
 import torch.nn as nn
@@ -136,8 +134,6 @@ class ResNet_mfcc(nn.Module):
 		super(ResNet_mfcc, self).__init__()
 
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(32)
-		self.activation = nn.ReLU()
 
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -183,7 +179,6 @@ class ResNet_mfcc(nn.Module):
 	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
@@ -203,8 +198,6 @@ class ResNet_34(nn.Module):
 		super(ResNet_34, self).__init__()
 
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(32)
-		self.activation = nn.ReLU()
 
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -250,7 +243,6 @@ class ResNet_34(nn.Module):
 	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
@@ -270,8 +262,6 @@ class ResNet_lstm(nn.Module):
 		super(ResNet_lstm, self).__init__()
 
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(32)
-		self.activation = nn.ReLU()
 
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -318,7 +308,6 @@ class ResNet_lstm(nn.Module):
 
 	def forward(self, x, inner=False):
 		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
@@ -351,8 +340,6 @@ class ResNet_qrnn(nn.Module):
 		super(ResNet_qrnn, self).__init__()
 
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(32)
-		self.activation = nn.ReLU()
 
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -401,7 +388,6 @@ class ResNet_qrnn(nn.Module):
 
 	def forward(self, x, inner=False):
 		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
@@ -421,8 +407,6 @@ class ResNet_large(nn.Module):
 		super(ResNet_large, self).__init__()
 
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(32)
-		self.activation = nn.ReLU()
 
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -468,7 +452,6 @@ class ResNet_large(nn.Module):
 	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
@@ -489,8 +472,6 @@ class ResNet_stats(nn.Module):
 		super(ResNet_stats, self).__init__()
 
 		self.conv1 = nn.Conv2d(3 if delta else 1, 32, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(32)
-		self.activation = nn.ReLU()
 
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -534,7 +515,6 @@ class ResNet_stats(nn.Module):
 	def forward(self, x, inner=False):
 
 		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
@@ -556,8 +536,6 @@ class ResNet_small(nn.Module):
 		super(ResNet_small, self).__init__()
 
 		self.conv1 = nn.Conv2d(3 if delta else 1, 16, kernel_size=(ncoef,3), stride=(1,1), padding=(0,1), bias=False)
-		self.bn1 = nn.BatchNorm2d(16)
-		self.activation = nn.ReLU()
 
 		self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
 		self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -602,7 +580,6 @@ class ResNet_small(nn.Module):
 
 	def forward(self, x, inner=False):
 		x = self.conv1(x)
-		x = self.activation(self.bn1(x))
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
@@ -617,7 +594,7 @@ class ResNet_small(nn.Module):
 		return fc if inner else mu
 
 class ResNet_2d(nn.Module):
-	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
+	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBlock, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		self.in_planes = 16
 		super(ResNet_2d, self).__init__()
 
