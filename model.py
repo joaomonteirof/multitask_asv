@@ -720,18 +720,18 @@ class TDNN_att(nn.Module):
 		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.Conv1d(512, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.Conv1d(512, 512, 5, padding=3),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.Conv1d(512, 512, 7),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 1500, 1),
 			nn.BatchNorm1d(1500),
-			nn.ReLU(inplace=True))
+			nn.ReLU(inplace=True) )
 
 		self.pooling = SelfAttention(1500)
 
@@ -772,18 +772,18 @@ class TDNN_multihead(nn.Module):
 		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.Conv1d(512, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.Conv1d(512, 512, 5, padding=3),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.Conv1d(512, 512, 7),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 1500, 1),
 			nn.BatchNorm1d(1500),
-			nn.ReLU(inplace=True))
+			nn.ReLU(inplace=True) )
 
 		self.pooling = nn.ModuleList()
 
@@ -833,18 +833,18 @@ class TDNN_lstm(nn.Module):
 		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.Conv1d(512, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.Conv1d(512, 512, 5, padding=3),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.Conv1d(512, 512, 7),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 1500, 1),
 			nn.BatchNorm1d(1500),
-			nn.ReLU(inplace=True))
+			nn.ReLU(inplace=True) )
 
 		self.pooling = nn.LSTM(1500, 512, 2, bidirectional=True, batch_first=False)
 		self.attention = SelfAttention(1024)
@@ -904,18 +904,18 @@ class TDNN_aspp(nn.Module):
 		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.Conv1d(512, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.Conv1d(512, 512, 5, padding=3),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.Conv1d(512, 512, 7),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 1500, 1),
 			nn.BatchNorm1d(1500),
-			nn.ReLU(inplace=True))
+			nn.ReLU(inplace=True) )
 
 		self.ASPP_block = ASPP(1500, 1500)
 
