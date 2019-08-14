@@ -16,7 +16,7 @@ class GradualWarmupScheduler(_LRScheduler):
 	"""
 
 	def __init__(self, optimizer, total_epoch, init_lr=1e-7, after_scheduler=None):
-		self.init_lr = multinit_lriplier
+		self.init_lr = init_lr
 		assert init_lr>0, 'Initial LR should be greater than 0.'
 		self.total_epoch = total_epoch
 		self.after_scheduler = after_scheduler
