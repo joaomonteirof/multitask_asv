@@ -6,30 +6,28 @@ import torch.nn.init as init
 from utils.losses import AMSoftmax, Softmax
 
 class SelfAttention(nn.Module):
-	def __init__(self, hidden_size):
+	def __init__(self, hidden_size, n_heads=1):
 		super(SelfAttention, self).__init__()
 
 		#self.output_size = output_size
 		self.hidden_size = hidden_size
-		self.att_weights = nn.Parameter(torch.Tensor(1, hidden_size), requires_grad=True)
+		self.att_weights = nn.Conv1d(hidden_size, n_heads, kernel_size=1, stride=1, padding=0, bias=False)
 
-		init.kaiming_uniform_(self.att_weights)
+		init.kaiming_uniform_(self.att_weights.weight)
 
 	def forward(self, inputs):
 
-		batch_size = inputs.size(0)
-		weights = torch.bmm(inputs, self.att_weights.permute(1, 0).unsqueeze(0).repeat(batch_size, 1, 1))
+		weights = self.att_weights(inputs)
 
-		attentions = F.softmax(torch.tanh(weights.squeeze(2)),dim=1)
+		attentions = F.softmax(torch.tanh(weights),dim=-1)
+		inputs = inputs.unsqueeze(1).repeat(1,attentions.size(1), 1, 1)
 		weighted = torch.mul(inputs, attentions.unsqueeze(2).expand_as(inputs))
-
 		noise = 1e-5*torch.randn(weighted.size())
 
 		if inputs.is_cuda:
 			noise = noise.cuda(inputs.get_device())
 
-		avg_repr, std_repr = weighted.sum(1), (weighted+noise).std(1)
-
+		avg_repr, std_repr = weighted.sum(-1).view(inputs.size(0), -1), (weighted+noise).std(-1).view(inputs.size(0), -1)
 		representations = torch.cat((avg_repr,std_repr),1)
 
 		return representations
@@ -185,7 +183,7 @@ class ResNet_mfcc(nn.Module):
 		x = self.layer4(x)
 		x = x.squeeze(2)
 
-		stats = self.attention(x.permute(0,2,1).contiguous())
+		stats = self.attention(x.contiguous())
 
 		fc = F.relu(self.lbn(self.fc(stats)))
 
@@ -249,7 +247,7 @@ class ResNet_34(nn.Module):
 		x = self.layer4(x)
 		x = x.squeeze(2)
 
-		stats = self.attention(x.permute(0,2,1).contiguous())
+		stats = self.attention(x.contiguous())
 
 		fc = F.relu(self.lbn(self.fc(stats)))
 
@@ -312,7 +310,9 @@ class ResNet_lstm(nn.Module):
 		x = self.layer2(x)
 		x = self.layer3(x)
 		x = self.layer4(x)
-		x = x.squeeze(2).permute(2,0,1)
+		x = x.squeeze(2).permute(2, 0, 1)
+
+		print(x.size())
 
 		batch_size = x.size(1)
 		seq_size = x.size(0)
@@ -326,7 +326,8 @@ class ResNet_lstm(nn.Module):
 
 		out_seq, (h_, c_) = self.lstm(x, (h0, c0))
 
-		stats = self.attention(out_seq.permute(1,0,2).contiguous())
+
+		stats = self.attention(out_seq.permute(1,2,0).contiguous())
 
 		x = torch.cat([stats,h_.mean(0)],dim=1)
 
@@ -395,7 +396,7 @@ class ResNet_qrnn(nn.Module):
 		x = x.squeeze(2).permute(2,0,1)
 
 		out_seq, h_ = self.qrnn(x)
-		stats = self.attention(out_seq.permute(1,0,2).contiguous())
+		stats = self.attention(out_seq.permute(1,2,0).contiguous())
 		x = torch.cat([stats,h_.mean(0)],dim=1)
 		fc = F.relu(self.lbn(self.fc(x)))
 		mu = self.fc_mu(fc)
@@ -458,7 +459,7 @@ class ResNet_large(nn.Module):
 		x = self.layer4(x)
 		x = x.squeeze(2)
 
-		stats = self.attention(x.permute(0,2,1).contiguous())
+		stats = self.attention(x.contiguous())
 
 		fc = F.relu(self.lbn(self.fc(stats)))
 
@@ -586,7 +587,7 @@ class ResNet_small(nn.Module):
 		x = self.layer4(x)
 		x = x.squeeze(2)
 
-		stats = self.attention(x.permute(0,2,1).contiguous())
+		stats = self.attention(x.contiguous())
 
 		fc = F.relu(self.lbn(self.fc(stats)))
 
@@ -758,7 +759,7 @@ class TDNN_att(nn.Module):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
-		x = self.model(x.squeeze(1)).permute(0,2,1)
+		x = self.model(x.squeeze(1))
 		stats = self.pooling(x).unsqueeze(-1)
 		x = self.post_pooling(stats)
 
@@ -785,10 +786,7 @@ class TDNN_multihead(nn.Module):
 			nn.BatchNorm1d(1500),
 			nn.ReLU(inplace=True) )
 
-		self.pooling = nn.ModuleList()
-
-		for i in range(n_heads):
-			self.pooling.append(SelfAttention(1500))
+		self.pooling = SelfAttention(1500, n_heads=n_heads)
 
 		self.post_pooling = nn.Sequential(nn.Conv1d(1500*2*n_heads, 512, 1),
 			nn.BatchNorm1d(512),
@@ -813,15 +811,9 @@ class TDNN_multihead(nn.Module):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
-		x = self.model(x.squeeze(1)).permute(0,2,1)
-
-		stats = []
-
-		for mod_ in self.pooling:
-			stats.append(mod_(x))
-
-		x = torch.cat(stats, 1).unsqueeze(-1)
-		x = self.post_pooling(x)
+		x = self.model(x.squeeze(1))
+		stats = self.pooling(x).unsqueeze(-1)
+		x = self.post_pooling(stats)
 
 		return x.squeeze(-1)
 
@@ -872,9 +864,9 @@ class TDNN_lstm(nn.Module):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
-		x = self.model(x.squeeze(1)).permute(0,2,1)
+		x = self.model(x.squeeze(1))
 
-		x = x.permute(1,0,2)
+		x = x.permute(2, 0, 1)
 
 		batch_size = x.size(1)
 		seq_size = x.size(0)
@@ -888,7 +880,7 @@ class TDNN_lstm(nn.Module):
 
 		out_seq, (h_, c_) = self.pooling(x, (h0, c0))
 
-		stats = self.attention(out_seq.permute(1,0,2).contiguous())
+		stats = self.attention(out_seq.permute(1,2,0).contiguous())
 		x = torch.cat([stats,h_.mean(0)],dim=1).unsqueeze(-1)
 		x = self.post_pooling(x)
 
