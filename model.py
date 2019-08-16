@@ -174,7 +174,7 @@ class ResNet_mfcc(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 
 		x = self.conv1(x)
 		x = self.layer1(x)
@@ -188,7 +188,7 @@ class ResNet_mfcc(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return fc if inner else mu
+		return mu, fc
 
 class ResNet_34(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBlock, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -238,7 +238,7 @@ class ResNet_34(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 
 		x = self.conv1(x)
 		x = self.layer1(x)
@@ -252,7 +252,7 @@ class ResNet_34(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return fc if inner else mu
+		return mu, fc
 
 class ResNet_lstm(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -304,15 +304,13 @@ class ResNet_lstm(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		x = self.conv1(x)
 		x = self.layer1(x)
 		x = self.layer2(x)
 		x = self.layer3(x)
 		x = self.layer4(x)
 		x = x.squeeze(2).permute(2, 0, 1)
-
-		print(x.size())
 
 		batch_size = x.size(1)
 		seq_size = x.size(0)
@@ -333,7 +331,7 @@ class ResNet_lstm(nn.Module):
 
 		fc = F.relu(self.lbn(self.fc(x)))
 		mu = self.fc_mu(fc)
-		return fc if inner else mu
+		return mu, fc
 
 class ResNet_qrnn(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -387,7 +385,7 @@ class ResNet_qrnn(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		x = self.conv1(x)
 		x = self.layer1(x)
 		x = self.layer2(x)
@@ -400,7 +398,7 @@ class ResNet_qrnn(nn.Module):
 		x = torch.cat([stats,h_.mean(0)],dim=1)
 		fc = F.relu(self.lbn(self.fc(x)))
 		mu = self.fc_mu(fc)
-		return fc if inner else mu
+		return mu, fc
 
 class ResNet_large(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,23,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -450,7 +448,7 @@ class ResNet_large(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 
 		x = self.conv1(x)
 		x = self.layer1(x)
@@ -465,7 +463,7 @@ class ResNet_large(nn.Module):
 
 		mu = self.fc_mu(fc)
 
-		return fc if inner else mu
+		return mu, fc
 
 class ResNet_stats(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBottleneck, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -513,7 +511,7 @@ class ResNet_stats(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 
 		x = self.conv1(x)
 		x = self.layer1(x)
@@ -529,7 +527,7 @@ class ResNet_stats(nn.Module):
 
 		#embs = torch.div(mu, torch.norm(mu, 2, 1).unsqueeze(1).expand_as(mu))
 
-		return fc if inner else mu
+		return mu, fc
 
 class ResNet_small(nn.Module):
 	def __init__(self, n_z=256, layers=[2,2,2,2], block=PreActBlock, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -579,7 +577,7 @@ class ResNet_small(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		x = self.conv1(x)
 		x = self.layer1(x)
 		x = self.layer2(x)
@@ -592,7 +590,7 @@ class ResNet_small(nn.Module):
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return fc if inner else mu
+		return mu, fc
 
 class ResNet_2d(nn.Module):
 	def __init__(self, n_z=256, layers=[3,4,6,3], block=PreActBlock, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -644,7 +642,7 @@ class ResNet_2d(nn.Module):
 			self.in_planes = planes * block.expansion
 		return nn.Sequential(*layers)
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		x = self.conv1(x)
 		x = self.layer1(x)
 		x = self.layer2(x)
@@ -653,12 +651,12 @@ class ResNet_2d(nn.Module):
 		x = self.conv_out(x)
 		x = x.squeeze(2)
 
-		stats = self.attention(x.permute(0,2,1).contiguous())
+		stats = self.attention(x.contiguous())
 
 		fc = F.relu(self.lbn(self.fc(stats)))
 
 		mu = self.fc_mu(fc)
-		return fc if inner else mu
+		return mu, fc
 
 class StatisticalPooling(nn.Module):
 
@@ -669,30 +667,32 @@ class StatisticalPooling(nn.Module):
 		return torch.cat((mu, std), dim=1)
 
 class TDNN(nn.Module):
-	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.py
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super(TDNN, self).__init__()
 		self.delta=delta
 		self.model = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=2, padding=2),
+			nn.Conv1d(512, 512, 5, padding=2),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 3, dilation=3, padding=3),
+			nn.Conv1d(512, 512, 5, padding=3),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.Conv1d(512, 512, 7),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 1500, 1),
 			nn.BatchNorm1d(1500),
-			nn.ReLU(inplace=True),
-			StatisticalPooling(),
-			nn.Conv1d(3000, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.pooling = StatisticalPooling()
+
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(3000, 512, 1),
 			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Conv1d(512, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, n_z, 1) )
@@ -705,13 +705,16 @@ class TDNN(nn.Module):
 			else:
 				raise NotImplementedError
 
-		# get output features at affine after stats pooling
-		# self.model = nn.Sequential(*list(self.model.children())[:-5])
-
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
-		return self.model(x.squeeze(1)).squeeze(-1)
+
+		x = self.model(x.squeeze(1))
+		x = self.pooling(x)
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
+
+		return x.squeeze(-1), fc.squeeze(-1)
 
 class TDNN_att(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -736,10 +739,11 @@ class TDNN_att(nn.Module):
 
 		self.pooling = SelfAttention(1500)
 
-		self.post_pooling = nn.Sequential(nn.Conv1d(1500*2, 512, 1),
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(1500*2, 512, 1),
 			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Conv1d(512, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, n_z, 1) )
@@ -752,18 +756,16 @@ class TDNN_att(nn.Module):
 			else:
 				raise NotImplementedError
 
-		# get output features at affine after stats pooling
-		# self.model = nn.Sequential(*list(self.model.children())[:-5])
-
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
 		x = self.model(x.squeeze(1))
-		stats = self.pooling(x).unsqueeze(-1)
-		x = self.post_pooling(stats)
+		x = self.pooling(x).unsqueeze(-1)
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
 
-		return x.squeeze(-1)
+		return x.squeeze(-1), fc.squeeze(-1)
 
 class TDNN_multihead(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, n_heads=4, sm_type='none', delta=False):
@@ -788,10 +790,11 @@ class TDNN_multihead(nn.Module):
 
 		self.pooling = SelfAttention(1500, n_heads=n_heads)
 
-		self.post_pooling = nn.Sequential(nn.Conv1d(1500*2*n_heads, 512, 1),
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(1500*2*n_heads, 512, 1),
 			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Conv1d(512, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, n_z, 1) )
@@ -807,15 +810,16 @@ class TDNN_multihead(nn.Module):
 		# get output features at affine after stats pooling
 		# self.model = nn.Sequential(*list(self.model.children())[:-5])
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
 		x = self.model(x.squeeze(1))
-		stats = self.pooling(x).unsqueeze(-1)
-		x = self.post_pooling(stats)
+		x = self.pooling(x).unsqueeze(-1)
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
 
-		return x.squeeze(-1)
+		return x.squeeze(-1), fc.squeeze(-1)
 
 class TDNN_lstm(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
@@ -841,10 +845,11 @@ class TDNN_lstm(nn.Module):
 		self.pooling = nn.LSTM(1500, 512, 2, bidirectional=True, batch_first=False)
 		self.attention = SelfAttention(1024)
 
-		self.post_pooling = nn.Sequential(nn.Conv1d(2560, 512, 1),
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(2560, 512, 1),
 			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Conv1d(512, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, n_z, 1) )
@@ -860,7 +865,7 @@ class TDNN_lstm(nn.Module):
 		# get output features at affine after stats pooling
 		# self.model = nn.Sequential(*list(self.model.children())[:-5])
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
@@ -880,11 +885,12 @@ class TDNN_lstm(nn.Module):
 
 		out_seq, (h_, c_) = self.pooling(x, (h0, c0))
 
-		stats = self.attention(out_seq.permute(1,2,0).contiguous())
-		x = torch.cat([stats,h_.mean(0)],dim=1).unsqueeze(-1)
-		x = self.post_pooling(x)
+		x = self.attention(out_seq.permute(1,2,0).contiguous())
+		x = torch.cat([x,h_.mean(0)],dim=1).unsqueeze(-1)
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
 
-		return x.squeeze(-1)
+		return x.squeeze(-1), fc.squeeze(-1)
 
 class TDNN_aspp(nn.Module):
 
@@ -911,10 +917,11 @@ class TDNN_aspp(nn.Module):
 
 		self.ASPP_block = ASPP(1500, 1500)
 
-		self.post_pooling = nn.Sequential(nn.Conv1d(1500, 512, 1),
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(1500, 512, 1),
 			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Conv1d(512, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, n_z, 1) )
@@ -927,7 +934,7 @@ class TDNN_aspp(nn.Module):
 			else:
 				raise NotImplementedError
 
-	def forward(self, x, inner=False):
+	def forward(self, x):
 
 		x=x.squeeze(1)
 
@@ -937,12 +944,12 @@ class TDNN_aspp(nn.Module):
 		x = self.model(x)
 		x = self.ASPP_block(x)
 		x = x.mean(dim=2, keepdim=True)
-		x = self.post_pooling(x)
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
 
-		return x.squeeze(-1)
+		return x.squeeze(-1), fc.squeeze(-1)
 
 class TDNN_mod(nn.Module):
-	# Architecture taken from https://github.com/santi-pdp/pase/blob/master/pase/models/tdnn.py
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super(TDNN_mod, self).__init__()
 		self.delta=delta
@@ -960,12 +967,15 @@ class TDNN_mod(nn.Module):
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 1500, 1),
 			nn.BatchNorm1d(1500),
-			nn.ReLU(inplace=True),
-			StatisticalPooling(),
-			nn.Conv1d(3000, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.pooling = StatisticalPooling()
+
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(3000, 512, 1),
 			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 1),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Conv1d(512, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, n_z, 1) )
@@ -978,13 +988,16 @@ class TDNN_mod(nn.Module):
 			else:
 				raise NotImplementedError
 
-		# get output features at affine after stats pooling
-		# self.model = nn.Sequential(*list(self.model.children())[:-5])
-
-	def forward(self, x, inner=False):
+	def forward(self, x):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
-		return self.model(x.squeeze(1)).squeeze(-1)
+
+		x = self.model(x.squeeze(1))
+		x = self.pooling(x)
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
+
+		return x.squeeze(-1), fc.squeeze(-1)
 
 class _ASPPModule(nn.Module):
 	def __init__(self, inplanes, planes, kernel_size, padding, dilation):

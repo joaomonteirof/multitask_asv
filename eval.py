@@ -38,6 +38,7 @@ if __name__ == '__main__':
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
+	parser.add_argument('--inner', action='store_true', default=False, help='Get embeddings from inner layer')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--scores-path', type=str, default='./scores.p', metavar='Path', help='Path for saving computed scores')
 	parser.add_argument('--read-scores', action='store_true', default=False, help='If set, reads precomputed scores at --scores-path')
@@ -146,10 +147,8 @@ if __name__ == '__main__':
 					if args.cuda:
 						enroll_utt_data = enroll_utt_data.cuda(device)
 
-					emb_enroll = model.forward(enroll_utt_data).detach()
+					emb_enroll = model.forward(enroll_utt_data)[1].detach() if args.inner else model.forward(enroll_utt_data)[0].detach()
 					mem_embeddings[enroll_utt] = emb_enroll
-
-
 
 				test_utt = utterances_test[i]
 
@@ -163,7 +162,7 @@ if __name__ == '__main__':
 						enroll_utt_data = enroll_utt_data.cuda(device)
 						test_utt_data = test_utt_data.cuda(device)
 
-					emb_test = model.forward(test_utt_data).detach()
+					emb_test = model.forward(test_utt_data)[1].detach() if args.inner else model.forward(test_utt_data)[0].detach()
 					mem_embeddings[test_utt] = emb_test
 
 				scores.append( torch.nn.functional.cosine_similarity(emb_enroll, emb_test).mean().item() )

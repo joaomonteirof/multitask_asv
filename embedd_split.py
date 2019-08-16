@@ -84,28 +84,16 @@ if __name__ == '__main__':
 		model = model_.ResNet_2d(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
 	elif args.model == 'TDNN':
 		model = model_.TDNN(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		if args.inner:
-			model.model = torch.nn.Sequential(*list(model.model.children())[:-5])
 	elif args.model == 'TDNN_att':
 		model = model_.TDNN_att(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		if args.inner:
-			model.post_pooling = torch.nn.Sequential(*list(model.post_pooling.children())[:-5])
 	elif args.model == 'TDNN_multihead':
 		model = model_.TDNN_multihead(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		if args.inner:
-			model.post_pooling = torch.nn.Sequential(*list(model.post_pooling.children())[:-5])
 	elif args.model == 'TDNN_lstm':
 		model = model_.TDNN_lstm(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		if args.inner:
-			model.post_pooling = torch.nn.Sequential(*list(model.post_pooling.children())[:-5])
 	elif args.model == 'TDNN_aspp':
 		model = model_.TDNN_aspp(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		if args.inner:
-			model.post_pooling = torch.nn.Sequential(*list(model.post_pooling.children())[:-5])
 	elif args.model == 'TDNN_mod':
 		model = model_.TDNN_mod(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
-		if args.inner:
-			model.model = torch.nn.Sequential(*list(model.model.children())[:-5])
 
 	ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 	model.load_state_dict(ckpt['model_state'], strict=False)
@@ -148,13 +136,13 @@ if __name__ == '__main__':
 						feats = feats.to(device)
 						model = model.to(device)
 
-					emb = model.forward(feats, inner=args.inner)
+					emb = model.forward(feats)[1] if args.inner else model.forward(feats)[0]
 
 				except:
 					feats = feats.cpu()
 					model = model.cpu()
 
-					emb = model.forward(feats, inner=args.inner)
+					emb = model.forward(feats)[1] if args.inner else model.forward(feats)[0]
 
 				embeddings[utt] = emb.mean(0).detach().cpu().numpy().squeeze()
 

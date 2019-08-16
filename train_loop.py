@@ -220,8 +220,9 @@ class TrainLoop(object):
 			utterances = utterances.to(self.device, non_blocking=True)
 			y = y.to(self.device, non_blocking=True)
 
-		embeddings = self.model.forward(utterances)
+		out, embeddings = self.model.forward(utterances)
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+		out_norm = F.normalize(out, p=2, dim=1)
 
 		if self.mining:
 			triplets_idx, entropy_indices = self.harvester_mine.get_triplets(embeddings_norm.detach(), y)
@@ -246,7 +247,7 @@ class TrainLoop(object):
 				self.logger.add_scalar('Train/Entropy reg.', entropy_regularizer.item(), self.total_iters)
 
 		if self.softmax:
-			ce = self.ce_criterion(self.model.out_proj(embeddings_norm, y), y)
+			ce = self.ce_criterion(self.model.out_proj(out_norm, y), y)
 			loss += ce
 			loss.backward()
 			self.optimizer.step()
@@ -272,10 +273,10 @@ class TrainLoop(object):
 			utterances = utterances.to(self.device, non_blocking=True)
 			y = y.to(self.device, non_blocking=True)
 
-		embeddings = self.model.forward(utterances)
-		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+		out, embeddings = self.model.forward(utterances)
+		out_norm = F.normalize(out, p=2, dim=1)
 
-		loss = self.ce_criterion(self.model.out_proj(embeddings_norm, y), y)
+		loss = self.ce_criterion(self.model.out_proj(out_norm, y), y)
 
 		loss.backward()
 		self.optimizer.step()
@@ -299,7 +300,7 @@ class TrainLoop(object):
 				utterances = utterances.to(self.device, non_blocking=True)
 				y = y.to(self.device, non_blocking=True)
 
-			embeddings = self.model.forward(utterances)
+			out, embeddings = self.model.forward(utterances)
 			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
 			triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
