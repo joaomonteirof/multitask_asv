@@ -180,6 +180,8 @@ class TrainLoop(object):
 
 					self.logger.add_embedding(mat=emb, metadata=list(y_), global_step=self.total_iters-1)
 					self.logger.add_histogram('Valid/Embeddings', values=emb, global_step=self.total_iters-1)
+					self.logger.add_histogram('Valid/Scores', values=scores, global_step=self.total_iters-1)
+					self.logger.add_histogram('Valid/Labels', values=labels, global_step=self.total_iters-1)
 
 			if self.verbose>0:
 				print('Current LR: {}'.format(self.optimizer.param_groups[0]['lr']))
