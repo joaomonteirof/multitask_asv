@@ -38,11 +38,13 @@ parser.add_argument('--cuda', type=str, default=None)
 parser.add_argument('--delta', type=str, default=None)
 parser.add_argument('--out-file', type=str, default='./eer.p')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
+parser.add_argument('--logdir', type=str, default=None, metavar='Path', help='Path for checkpointing')
 parser.add_argument('--cp-name', type=str, default=None)
 args = parser.parse_args()
 args.cuda = True if args.cuda=='True' and torch.cuda.is_available() else False
 args.swap = True if args.swap=='True' else False
 args.delta = True if args.delta=='True' else False
+args.logdir = None if args.logdir=='None' else args.logdir
 
 if args.cuda:
 	device = get_freer_gpu()
@@ -51,6 +53,12 @@ if args.cuda:
 		cupy.cuda.Device(int(str(device).split(':')[-1])).use()
 else:
 	device = None
+
+if args.logdir:
+	from torch.utils.tensorboard import SummaryWriter
+	writer = SummaryWriter(log_dir=args.logdir+args.cp_name, comment=args.model, purge_step=True)
+else:
+	writer = None
 
 train_dataset = Loader(hdf5_name = args.train_hdf_file, max_nb_frames = args.n_frames, delta = args.delta)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, worker_init_fn=set_np_randomseed)
@@ -92,7 +100,7 @@ if args.cuda:
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2)
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda)
+trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda, logger=writer)
 
 print('Cuda Mode: {}'.format(args.cuda))
 print('Softmax Mode: {}'.format(args.softmax))
