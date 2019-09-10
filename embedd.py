@@ -33,7 +33,9 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Compute embeddings')
 	parser.add_argument('--path-to-data', type=str, default='./data/', metavar='Path', help='Path to input data')
+	parser.add_argument('--path-to-more-data', type=str, default=None, metavar='Path', help='Path to input data')
 	parser.add_argument('--utt2spk', type=str, default=None, metavar='Path', help='Optional path for utt2spk')
+	parser.add_argument('--more-utt2spk', type=str, default=None, metavar='Path', help='Optional path for utt2spk')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--out-path', type=str, default='./', metavar='Path', help='Path to output hdf file')
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod'], default='resnet_mfcc', help='Model arch according to input type')
@@ -102,8 +104,16 @@ if __name__ == '__main__':
 		print('Nothing found at {}.'.format(args.path_to_data))
 		exit(1)
 
+	more_scp_list = glob.glob(args.path_to_more_data + '*.scp')
+
+	if len(more_scp_list)<1:
+		print('Nothing found at {}.'.format(args.path_to_more_data))
+		exit(1)
+
 	if args.utt2spk:
 		utt2spk = read_utt2spk(args.utt2spk)
+		if args.more_utt2spk:
+			utt2spk.update(read_utt2spk(args.more_utt2spk))
 
 	print('Start of data embeddings computation')
 
