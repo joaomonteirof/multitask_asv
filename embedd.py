@@ -104,11 +104,14 @@ if __name__ == '__main__':
 		print('Nothing found at {}.'.format(args.path_to_data))
 		exit(1)
 
-	more_scp_list = glob.glob(args.path_to_more_data + '*.scp')
+	if args.path_to_more_data:
+		more_scp_list = glob.glob(args.path_to_more_data + '*.scp')
 
-	if len(more_scp_list)<1:
-		print('Nothing found at {}.'.format(args.path_to_more_data))
-		exit(1)
+		if len(more_scp_list)<1:
+			print('Nothing found at {}.'.format(args.path_to_more_data))
+			exit(1)
+		else:
+			scp_list = scp_list + more_scp_list
 
 	if args.utt2spk:
 		utt2spk = read_utt2spk(args.utt2spk)
