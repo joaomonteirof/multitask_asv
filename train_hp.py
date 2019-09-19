@@ -102,6 +102,7 @@ optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, we
 
 trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda, logger=writer)
 
+print('CP name: {}'.format(args.cp_name))
 print('Cuda Mode: {}'.format(args.cuda))
 print('Softmax Mode: {}'.format(args.softmax))
 print('Selected model: {}'.format(args.model))
