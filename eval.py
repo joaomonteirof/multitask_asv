@@ -40,9 +40,12 @@ if __name__ == '__main__':
 	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
 	parser.add_argument('--inner', action='store_true', default=False, help='Get embeddings from inner layer')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
-	parser.add_argument('--scores-path', type=str, default='./scores.p', metavar='Path', help='Path for saving computed scores')
 	parser.add_argument('--read-scores', action='store_true', default=False, help='If set, reads precomputed scores at --scores-path')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
+	parser.add_argument('--no-out', action='store_true', default=False, help='Disables writing scores in out file')
+	parser.add_argument('--out-path', type=str, default='./', metavar='Path', help='Path for saving computed scores')
+	parser.add_argument('--out-prefix', type=str, default=None, metavar='Path', help='Prefix to be added to score files')
+	parser.add_argument('--eval', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
@@ -130,6 +133,7 @@ if __name__ == '__main__':
 		print('\nAll data ready. Start of scoring')
 
 		scores = []
+		out_cos = []
 		mem_embeddings = {}
 
 		with torch.no_grad():
@@ -166,12 +170,17 @@ if __name__ == '__main__':
 					mem_embeddings[test_utt] = emb_test
 
 				scores.append( torch.nn.functional.cosine_similarity(emb_enroll, emb_test).mean().item() )
+				out_cos.append([enroll_utt, test_utt, scores[-1]])
 
 		print('\nScoring done')
 
-		with open(args.scores_path, 'wb') as p:
-			pickle.dump({'scores':scores, 'labels':labels}, p, protocol=pickle.HIGHEST_PROTOCOL)
+		if not args.no_out:
 
-	eer, auc, avg_precision, acc, threshold = compute_metrics(np.asarray(labels), np.asarray(scores))
+			with open(args.out_path+args.out_prefix+'cos_scores.out' if args.out_prefix is not None else args.out_path+'cos_scores.out', 'w') as f:
+				for el in out_e2e:
+					item = el[0] + ' ' + el[1] + ' ' + str(el[2]) + '\n'
+					f.write("%s" % item)
 
-	print('ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {}, {}, {}, {}, {}'.format(eer, auc, avg_precision, acc, threshold))
+	if not args.eval:
+		eer, auc, avg_precision, acc, threshold = compute_metrics(np.asarray(labels), np.asarray(scores))
+		print('ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {}, {}, {}, {}, {}'.format(eer, auc, avg_precision, acc, threshold))

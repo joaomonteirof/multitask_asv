@@ -28,21 +28,6 @@ def prep_feats(data_, delta=False):
 
 	return torch.from_numpy(features[np.newaxis, :, :, :]).float()
 
-def compute_metrics(y, y_score):
-	fpr, tpr, thresholds = metrics.roc_curve(y, y_score, pos_label=1)
-	fnr = 1 - tpr
-	eer_threshold = thresholds[np.nanargmin(np.abs(fnr-fpr))]
-	eer = fpr[np.nanargmin(np.abs(fnr-fpr))]
-
-	auc = metrics.auc(fpr, tpr)
-
-	avg_precision = metrics.average_precision_score(y, y_score)
-
-	pred = np.asarray([1 if score > eer_threshold else 0 for score in y_score])
-	acc = metrics.accuracy_score(y ,pred)
-
-	return eer, auc, avg_precision, acc, eer_threshold
-
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Evaluation')
@@ -58,6 +43,10 @@ if __name__ == '__main__':
 	parser.add_argument('--inner', action='store_true', default=False, help='Get embeddings from inner layer')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
+	parser.add_argument('--no-out', action='store_true', default=False, help='Disables writing scores in out file')
+	parser.add_argument('--out-path', type=str, default='./', metavar='Path', help='Path for saving computed scores')
+	parser.add_argument('--out-prefix', type=str, default=None, metavar='Path', help='Prefix to be added to score files')
+	parser.add_argument('--eval', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
@@ -160,6 +149,7 @@ if __name__ == '__main__':
 	print('\nAll data ready. Start of scoring')
 
 	scores = []
+	out_cos = []
 	mem_embeddings_enroll = {}
 	mem_embeddings_test = {}
 
@@ -220,9 +210,17 @@ if __name__ == '__main__':
 				mem_embeddings_test[test_utt] = emb_test
 
 			scores.append( torch.nn.functional.cosine_similarity(emb_enroll, emb_test).mean().item() )
+			out_cos.append([speakers_enroll[i], test_utt, scores[-1]])
 
 		print('\nScoring done')
 
-		eer, auc, avg_precision, acc, threshold = compute_metrics(np.asarray(labels), np.asarray(scores))
+		if not args.no_out:
 
-		print('ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {}, {}, {}, {}, {}'.format(eer, auc, avg_precision, acc, threshold))
+			with open(args.out_path+args.out_prefix+'cos_scores.out' if args.out_prefix is not None else args.out_path+'cos_scores.out', 'w') as f:
+				for el in out_e2e:
+					item = el[0] + ' ' + el[1] + ' ' + str(el[2]) + '\n'
+					f.write("%s" % item)
+
+		if not args.eval:
+			eer, auc, avg_precision, acc, threshold = compute_metrics(np.asarray(labels), np.asarray(scores))
+			print('ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {}, {}, {}, {}, {}'.format(eer, auc, avg_precision, acc, threshold))
