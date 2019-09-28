@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	parser.add_argument('--no-out', action='store_true', default=False, help='Disables writing scores in out file')
 	parser.add_argument('--out-path', type=str, default='./', metavar='Path', help='Path for saving computed scores')
 	parser.add_argument('--out-prefix', type=str, default=None, metavar='Path', help='Prefix to be added to score files')
-	parser.add_argument('--eval', action='store_true', default=False, help='Disables GPU use')
+	parser.add_argument('--eval', action='store_true', default=False, help='Eval trials - Does not compute perf metrics')
 	args = parser.parse_args()
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
 		if not args.no_out:
 
 			with open(args.out_path+args.out_prefix+'cos_scores.out' if args.out_prefix is not None else args.out_path+'cos_scores.out', 'w') as f:
-				for el in out_e2e:
+				for el in out_cos:
 					item = el[0] + ' ' + el[1] + ' ' + str(el[2]) + '\n'
 					f.write("%s" % item)
 
