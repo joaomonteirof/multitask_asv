@@ -142,12 +142,14 @@ if __name__ == '__main__':
 				unlab_utt_data = prep_feats(v, args.delta)
 
 				if args.cuda:
-					unlab_utt_data = unlab_utt_data.cuda(device)
+					unlab_utt_data = unlab_utt_data.to(device)
 
-				unlab_emb.append(model.forward(unlab_utt_data)[1].detach().unsqueeze(0) if args.inner else model.forward(unlab_utt_data)[0].detach().unsqueeze(0))
+				u_emb = model.forward(unlab_utt_data)
+
+				unlab_emb.append(u_emb[1].detach() if args.inner else u_emb[0].detach())
 
 
-		unlab_emb=torch.cat(unlab_emb, 0).mean(0)
+		unlab_emb=torch.cat(unlab_emb, 0).mean(0, keepdim=True)
 
 	spk2utt = read_spk2utt(args.spk2utt)
 
@@ -179,9 +181,11 @@ if __name__ == '__main__':
 					enroll_utt_data = prep_feats(enroll_data[enroll_utt], args.delta)
 
 					if args.cuda:
-						enroll_utt_data = enroll_utt_data.cuda(device)
+						enroll_utt_data = enroll_utt_data.to(device)
 
-					new_emb_enroll = model.forward(enroll_utt_data)[1].detach() if args.inner else model.forward(enroll_utt_data)[0].detach()
+					new_emb_enroll = model.forward(enroll_utt_data)
+
+					new_emb_enroll = new_emb_enroll[1].detach() if args.inner else new_emb_enroll[0].detach()
 
 					if emb_enroll is None:
 						emb_enroll = new_emb_enroll
@@ -192,6 +196,8 @@ if __name__ == '__main__':
 
 				if unlab_emb is not None:
 					emb_enroll -= unlab_emb
+
+				emb_enroll = F.normalize(emb_enroll, p=2, dim=1)
 
 				mem_embeddings_enroll[speakers_enroll[i]] = emb_enroll
 
@@ -206,13 +212,15 @@ if __name__ == '__main__':
 				test_utt_data = prep_feats(test_data[test_utt], args.delta)
 
 				if args.cuda:
-					enroll_utt_data = enroll_utt_data.cuda(device)
-					test_utt_data = test_utt_data.cuda(device)
+					enroll_utt_data = enroll_utt_data.to(device)
+					test_utt_data = test_utt_data.to(device)
 
 				emb_test =  model.forward(test_utt_data)[1].detach() if args.inner else model.forward(test_utt_data)[0].detach()
 
 				if unlab_emb is not None:
 					emb_test -= unlab_emb
+
+				emb_test = F.normalize(emb_test, p=2, dim=1)
 
 				mem_embeddings_test[test_utt] = emb_test
 

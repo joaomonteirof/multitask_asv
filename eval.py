@@ -111,7 +111,7 @@ if __name__ == '__main__':
 		model.eval()
 
 		if args.cuda:
-			model = model.cuda(device)
+			model = model.to(device)
 
 		enroll_data = None
 
@@ -156,9 +156,10 @@ if __name__ == '__main__':
 					enroll_utt_data = prep_feats(enroll_data[enroll_utt], args.delta)
 
 					if args.cuda:
-						enroll_utt_data = enroll_utt_data.cuda(device)
+						enroll_utt_data = enroll_utt_data.to(device)
 
 					emb_enroll = model.forward(enroll_utt_data)[1].detach() if args.inner else model.forward(enroll_utt_data)[0].detach()
+					emb_enroll = F.normalize(emb_enroll, p=2, dim=1)
 					mem_embeddings[enroll_utt] = emb_enroll
 
 				test_utt = utterances_test[i]
@@ -170,10 +171,11 @@ if __name__ == '__main__':
 					test_utt_data = prep_feats(test_data[test_utt], args.delta)
 
 					if args.cuda:
-						enroll_utt_data = enroll_utt_data.cuda(device)
-						test_utt_data = test_utt_data.cuda(device)
+						enroll_utt_data = enroll_utt_data.to(device)
+						test_utt_data = test_utt_data.to(device)
 
 					emb_test = model.forward(test_utt_data)[1].detach() if args.inner else model.forward(test_utt_data)[0].detach()
+					emb_test = F.normalize(emb_test, p=2, dim=1)
 					mem_embeddings[test_utt] = emb_test
 
 				scores.append( torch.nn.functional.cosine_similarity(emb_enroll, emb_test).mean().item() )

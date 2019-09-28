@@ -142,14 +142,15 @@ if __name__ == '__main__':
 						feats = feats.to(device)
 						model = model.to(device)
 
-					emb = model.forward(feats)[1] if args.inner else model.forward(feats)[0]
+					emb = model.forward(feats)
 
 				except:
 					feats = feats.cpu()
 					model = model.cpu()
+					emb = model.forward(feats)
 
-					emb = model.forward(feats)[1] if args.inner else model.forward(feats)[0]
-
+				emb = emb[1] if args.inner else emb[0]
+				emb_enroll = F.normalize(emb, p=2, dim=1)
 				embeddings[utt] = emb.detach().cpu().numpy().squeeze()
 
 				if args.eps>0.0:
