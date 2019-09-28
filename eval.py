@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import torch
+import torch.nn.functional as F
 from kaldi_io import read_mat_scp
 from sklearn import metrics
 import scipy.io as sio
