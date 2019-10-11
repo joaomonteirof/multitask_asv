@@ -108,7 +108,7 @@ if args.pretrained_path is not None:
 	ckpt = torch.load(args.pretrained_path, map_location = lambda storage, loc: storage)
 
 	try:
-		model.load_state_dict(ckpt['model_state'], strict=True)
+		model.load_state_dict(ckpt['model_state'], strict=True if args.checkpoint_epoch is None else False)
 	except RuntimeError as err:
 		print("Runtime Error: {0}".format(err))
 	except:
