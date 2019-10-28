@@ -1076,3 +1076,52 @@ class ASPP(nn.Module):
 			elif isinstance(m, nn.BatchNorm1d):
 				m.weight.data.fill_(1)
 				m.bias.data.zero_()
+
+class transformer_enc(nn.Module):
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
+		super(transformer_enc, self).__init__()
+		self.delta=delta
+		self.pre_encoder = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 5, padding=3),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, 512, 7),
+			nn.BatchNorm1d(512) )
+
+		self.transformer_encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=512, nhead=8, dim_feedforward=1024, dropout=0.1), num_layers=6, norm=nn.LayerNorm(512) )
+
+		self.pooling = StatisticalPooling()
+
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(1024, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Conv1d(512, n_z, 1) )
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+	def forward(self, x):
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+
+		x = self.pre_encoder(x.squeeze(1))
+		x = self.transformer_encoder(x.permute(2,0,1))
+		x = self.pooling(x.permute(1,2,0))
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
+
+		return x.squeeze(-1), fc.squeeze(-1)

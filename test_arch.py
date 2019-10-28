@@ -10,7 +10,7 @@ from utils.utils import *
 
 # Training settings
 parser = argparse.ArgumentParser(description='Test new architectures')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'all'], default='all', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'transformer', 'all'], default='all', help='Model arch according to input type')
 parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
@@ -103,3 +103,9 @@ if args.model == 'TDNN_mod' or args.model == 'all':
 	mu, emb = model.forward(batch)
 	out = model.out_proj(mu, torch.ones(mu.size(0)))
 	print('TDNN_mod', mu.size(), emb.size(), out.size())
+if args.model == 'transformer' or args.model == 'all':
+	batch = torch.rand(3, 3 if args.delta else 1, args.ncoef, 200)
+	model = model_.transformer_enc(n_z=args.latent_size, ncoef=args.ncoef, delta=args.delta, proj_size=10, sm_type='softmax')
+	mu, emb = model.forward(batch)
+	out = model.out_proj(mu, torch.ones(mu.size(0)))
+	print('transformer', mu.size(), emb.size(), out.size())
