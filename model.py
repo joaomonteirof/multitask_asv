@@ -1081,19 +1081,19 @@ class transformer_enc(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
 		super(transformer_enc, self).__init__()
 		self.delta=delta
-		self.pre_encoder = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
+		self.pre_encoder = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 5, padding=2),
+			nn.Conv1d(512, 512, 5),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
-			nn.Conv1d(512, 512, 5, padding=3),
+			nn.Conv1d(512, 512, 5),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
 			nn.Conv1d(512, 512, 7),
 			nn.BatchNorm1d(512) )
 
-		self.transformer_encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=512, nhead=8, dim_feedforward=1024, dropout=0.1), num_layers=6, norm=nn.LayerNorm(512) )
+		self.transformer_encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=512, nhead=8, dim_feedforward=768, dropout=0.1), num_layers=5, norm=nn.LayerNorm(512) )
 
 		self.pooling = StatisticalPooling()
 
