@@ -788,9 +788,10 @@ class TDNN_multihead(nn.Module):
 			nn.BatchNorm1d(1500),
 			nn.ReLU(inplace=True) )
 
-		self.pooling = SelfAttention(1500, n_heads=n_heads)
+		self.attention = nn.TransformerEncoderLayer(d_model=1500, nhead=n_heads, dim_feedforward=512, dropout=0.1)
+		self.pooling = StatisticalPooling()
 
-		self.post_pooling_1 = nn.Sequential(nn.Conv1d(1500*2*n_heads, 512, 1),
+		self.post_pooling_1 = nn.Sequential(nn.Conv1d(1500*2, 512, 1),
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True) )
 
@@ -807,15 +808,16 @@ class TDNN_multihead(nn.Module):
 			else:
 				raise NotImplementedError
 
-		# get output features at affine after stats pooling
-		# self.model = nn.Sequential(*list(self.model.children())[:-5])
-
 	def forward(self, x):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
-		x = self.model(x.squeeze(1))
-		x = self.pooling(x).unsqueeze(-1)
+		x = x.squeeze(1)
+		x = self.model(x)
+		x = x.permute(2,0,1)
+		x = self.attention(x)
+		x = x.permute(1,2,0)
+		x = self.pooling(x)
 		fc = self.post_pooling_1(x)
 		x = self.post_pooling_2(fc)
 
@@ -1113,9 +1115,12 @@ class transformer_enc(nn.Module):
 		if self.delta:
 			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
 
-		x = self.pre_encoder(x.squeeze(1))
-		x = self.transformer_encoder(x.permute(2,0,1))
-		x = self.pooling(x.permute(1,2,0))
+		x = x.squeeze(1)
+		x = self.pre_encoder(x)
+		x = x.permute(2,0,1)
+		x = self.transformer_encoder(x)
+		x = x.permute(1,2,0)
+		x = self.pooling(x)
 		fc = self.post_pooling_1(x)
 		x = self.post_pooling_2(fc)
 
