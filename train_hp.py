@@ -23,7 +23,6 @@ parser.add_argument('--l2', type=float, default=1e-5, metavar='L2', help='Weight
 parser.add_argument('--margin', type=float, default=0.3, metavar='m', help='margin fro triplet loss (default: 0.3)')
 parser.add_argument('--lamb', type=float, default=0.001, metavar='l', help='Entropy regularization penalty (default: 0.001)')
 parser.add_argument('--swap', type=str, default=None, help='Swaps anchor and positive depending on distance to negative example')
-parser.add_argument('--patience', type=int, default=10, metavar='S', help='Epochs to wait before decreasing LR by a factor of 0.5 (default: 10)')
 parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
 parser.add_argument('--softmax', choices=['none', 'softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
@@ -102,7 +101,7 @@ if args.cuda:
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2)
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda, logger=writer)
+trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda, logger=writer)
 
 print('CP name: {}'.format(args.cp_name))
 print('Cuda Mode: {}'.format(args.cuda))
@@ -116,7 +115,6 @@ print('l2: {}'.format(args.l2))
 print('lambda: {}'.format(args.lamb))
 print('Margin: {}'.format(args.margin))
 print('Swap: {}'.format(args.swap))
-print('Patience: {}'.format(args.patience))
 print('Warmup iterations: {}'.format(args.warmup))
 print('Label smoothing: {}'.format(args.smoothing))
 print('Delta features: {}'.format(args.delta))

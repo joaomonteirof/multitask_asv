@@ -24,7 +24,6 @@ parser.add_argument('--l2', type=float, default=1e-5, metavar='L2', help='Weight
 parser.add_argument('--margin', type=float, default=0.3, metavar='m', help='margin fro triplet loss (default: 0.3)')
 parser.add_argument('--lamb', type=float, default=0.001, metavar='l', help='Entropy regularization penalty (default: 0.001)')
 parser.add_argument('--swap', action='store_true', default=False, help='Swaps anchor and positive depending on distance to negative example')
-parser.add_argument('--patience', type=int, default=10, metavar='S', help='Epochs to wait before decreasing LR by a factor of 0.5 (default: 10)')
 parser.add_argument('--checkpoint-epoch', type=int, default=None, metavar='N', help='epoch to load for checkpointing. If None, training starts from scratch')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
 parser.add_argument('--logdir', type=str, default=None, metavar='Path', help='Path for checkpointing')
@@ -122,7 +121,7 @@ model = model.to(device)
 
 optimizer = TransformerOptimizer(optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2, nesterov=True), lr=args.lr, warmup_steps=args.warmup)
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, patience=args.patience, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=args.verbose, device=device, save_cp=(not args.no_cp), checkpoint_path=args.checkpoint_path, checkpoint_epoch=args.checkpoint_epoch, swap=args.swap, softmax=args.softmax, pretrain=args.pretrain, mining=args.mine_triplets, cuda=args.cuda, logger=writer)
+trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=args.verbose, device=device, save_cp=(not args.no_cp), checkpoint_path=args.checkpoint_path, checkpoint_epoch=args.checkpoint_epoch, swap=args.swap, softmax=args.softmax, pretrain=args.pretrain, mining=args.mine_triplets, cuda=args.cuda, logger=writer)
 
 if args.verbose >0:
 	print(' ')
@@ -140,7 +139,6 @@ if args.verbose >0:
 	print('lambda: {}'.format(args.lamb))
 	print('Margin: {}'.format(args.margin))
 	print('Swap: {}'.format(args.swap))
-	print('Patience: {}'.format(args.patience))
 	print('Delta features: {}'.format(args.delta))
 	print('Max input length: {}'.format(args.n_frames))
 	print('Warmup iterations: {}'.format(args.warmup))

@@ -64,12 +64,12 @@ parser.add_argument('--logdir', type=str, default=None, metavar='Path', help='Pa
 args=parser.parse_args()
 args.cuda=True if not args.no_cuda else False
 
-def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_submission_file, tmp_dir, cp_path, softmax, delta, logdir):
+def train(lr, l2, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_submission_file, tmp_dir, cp_path, softmax, delta, logdir):
 
 	file_name = get_file_name(tmp_dir)
 	np.random.seed()
 
-	command = 'sbatch' + ' ' + slurm_submission_file + ' ' + str(lr) + ' ' + str(l2) + ' ' + str(momentum) + ' ' + str(margin) + ' ' + str(lambda_) + ' ' + str(int(patience)) + ' ' + str(swap) + ' ' + str(int(latent_size)) + ' ' + str(int(n_frames)) + ' ' + str(model) + ' ' + str(ncoef) + ' ' + str(epochs) + ' ' + str(batch_size) + ' ' + str(valid_batch_size) + ' ' + str(n_workers) + ' ' + str(cuda) + ' ' + str(train_hdf_file) + ' ' + str(valid_hdf_file) + ' ' + str(file_name) + ' ' + str(cp_path) + ' ' + str(file_name.split('/')[-1]+'t') + ' ' + str(softmax) + ' ' + str(delta) + ' ' + str(logdir)
+	command = 'sbatch' + ' ' + slurm_submission_file + ' ' + str(lr) + ' ' + str(l2) + ' ' + str(momentum) + ' ' + str(margin) + ' ' + str(lambda_) + ' ' + str(swap) + ' ' + str(int(latent_size)) + ' ' + str(int(n_frames)) + ' ' + str(model) + ' ' + str(ncoef) + ' ' + str(epochs) + ' ' + str(batch_size) + ' ' + str(valid_batch_size) + ' ' + str(n_workers) + ' ' + str(cuda) + ' ' + str(train_hdf_file) + ' ' + str(valid_hdf_file) + ' ' + str(file_name) + ' ' + str(cp_path) + ' ' + str(file_name.split('/')[-1]+'t') + ' ' + str(softmax) + ' ' + str(delta) + ' ' + str(logdir)
 
 	for j in range(10):
 
@@ -103,7 +103,6 @@ def train(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_fram
 			print('lambda: {}'.format(lambda_))
 			print('Margin: {}'.format(margin))
 			print('Swap: {}'.format(swap))
-			print('Patience: {}'.format(int(patience)))
 			print('Softmax Mode: {}'.format(softmax))
 			print('Delta features: {}'.format(delta))
 			print(' ')
@@ -117,7 +116,6 @@ l2=instru.var.OrderedDiscrete([0.001, 0.0005, 0.0001, 0.00005, 0.00001])
 momentum=instru.var.OrderedDiscrete([0.1, 0.3, 0.5, 0.7, 0.9])
 margin=instru.var.OrderedDiscrete([0.1, 0.01, 0.001, 0.0001, 0.00001])
 lambda_=instru.var.OrderedDiscrete([0.1, 0.15, 0.20, 0.25, 0.30, 0.4, 0.50])
-patience=instru.var.OrderedDiscrete([2, 5, 8, 10])
 swap=instru.var.OrderedDiscrete([True, False])
 latent_size=instru.var.OrderedDiscrete([64, 128, 256, 512])
 n_frames=instru.var.OrderedDiscrete([300, 400, 500, 600, 800])
@@ -141,7 +139,7 @@ tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 if not os.path.isdir(tmp_dir):
 	os.mkdir(tmp_dir)
 
-instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, patience, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_sub_file, tmp_dir, checkpoint_path, softmax, delta, logdir)
+instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_sub_file, tmp_dir, checkpoint_path, softmax, delta, logdir)
 
 hp_optimizer=optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
 
