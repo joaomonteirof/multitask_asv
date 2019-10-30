@@ -91,7 +91,7 @@ class TrainLoop(object):
 						self.logger.add_scalar('Train/Train Loss', train_loss, self.total_iters)
 						self.logger.add_scalar('Train/Triplet Loss', train_loss-ce, self.total_iters)
 						self.logger.add_scalar('Train/Cross enropy', ce, self.total_iters)
-						self.logger.add_scalar('Info/LR', self.optimizer.param_groups[0]['lr'], self.total_iters)
+						self.logger.add_scalar('Info/LR', self.optimizer.optimizer.param_groups[0]['lr'], self.total_iters)
 					self.total_iters += 1
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
@@ -109,7 +109,7 @@ class TrainLoop(object):
 					ce_epoch+=ce
 					if self.logger:
 						self.logger.add_scalar('Cross enropy', ce, self.total_iters)
-						self.logger.add_scalar('Info/LR', self.optimizer.param_groups[0]['lr'], self.total_iters)
+						self.logger.add_scalar('Info/LR', self.optimizer.optimizer.param_groups[0]['lr'], self.total_iters)
 					self.total_iters += 1
 
 				self.history['train_loss'].append(ce_epoch/(t+1))
@@ -124,7 +124,7 @@ class TrainLoop(object):
 					train_loss_epoch+=train_loss
 					if self.logger:
 						self.logger.add_scalar('Train/Train Loss', train_loss, self.total_iters)
-						self.logger.add_scalar('Info/LR', self.optimizer.param_groups[0]['lr'], self.total_iters)
+						self.logger.add_scalar('Info/LR', self.optimizer.optimizer.param_groups[0]['lr'], self.total_iters)
 					self.total_iters += 1
 
 				self.history['train_loss'].append(train_loss_epoch/(t+1))
@@ -165,7 +165,7 @@ class TrainLoop(object):
 					self.logger.add_histogram('Valid/Labels', values=labels, global_step=self.total_iters-1)
 
 			if self.verbose>0:
-				print('Current LR: {}'.format(self.optimizer.param_groups[0]['lr']))
+				print('Current LR: {}'.format(self.optimizer.optimizer.param_groups[0]['lr']))
 
 			self.cur_epoch += 1
 
@@ -312,7 +312,7 @@ class TrainLoop(object):
 		if self.verbose>0:
 			print('Checkpointing...')
 		ckpt = {'model_state': self.model.state_dict(),
-		'optimizer_state': self.optimizer.state_dict(),
+		'optimizer_state': self.optimizer.optimizer.state_dict(),
 		'history': self.history,
 		'total_iters': self.total_iters,
 		'cur_epoch': self.cur_epoch}
@@ -329,7 +329,7 @@ class TrainLoop(object):
 			# Load model state
 			self.model.load_state_dict(ckpt['model_state'])
 			# Load optimizer state
-			self.optimizer.load_state_dict(ckpt['optimizer_state'])
+			self.optimizer.optimizer.load_state_dict(ckpt['optimizer_state'])
 			# Load history
 			self.history = ckpt['history']
 			self.total_iters = ckpt['total_iters']
