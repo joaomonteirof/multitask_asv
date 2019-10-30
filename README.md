@@ -5,8 +5,8 @@ Combining metric-learning and multi-clss classification for speaker dependent re
 ## Requirements
 
 ```
-Python = 3.6
-Pytorch >= 1.0.0
+Python >= 3.6
+Pytorch >= 1.2
 Scikit-learn >=0.19
 tqdm
 h5py
