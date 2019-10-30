@@ -47,7 +47,7 @@ parser.add_argument('--logdir', type=str, default=None, metavar='Path', help='Pa
 args=parser.parse_args()
 args.cuda=True if not args.no_cuda and torch.cuda.is_available() else False
 
-def train(lr, l2, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, cp_path, softmax, delta, logdir):
+def train(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, cp_path, softmax, delta, logdir):
 
 	if cuda:
 		device=get_freer_gpu()
@@ -107,12 +107,13 @@ def train(lr, l2, momentum, margin, lambda_, swap, latent_size, n_frames, model,
 
 	optimizer=optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=l2)
 
-	trainer=TrainLoop(model, optimizer, train_loader, valid_loader, margin=margin, lambda_=lambda_, verbose=-1, device=device, cp_name=cp_name, save_cp=True, checkpoint_path=cp_path, swap=swap, softmax=True, pretrain=False, mining=True, cuda=cuda, logger=writer)
+	trainer=TrainLoop(model, optimizer, train_loader, valid_loader, max_gnorm=max_gnorm, margin=margin, lambda_=lambda_, verbose=-1, device=device, cp_name=cp_name, save_cp=True, checkpoint_path=cp_path, swap=swap, softmax=True, pretrain=False, mining=True, cuda=cuda, logger=writer)
 
 	return trainer.train(n_epochs=epochs)
 
 lr=instru.var.OrderedDiscrete([0.1, 0.01, 0.001, 0.0001, 0.00001])
 l2=instru.var.OrderedDiscrete([0.001, 0.0005, 0.0001, 0.00005, 0.00001])
+max_gnorm=instru.var.OrderedDiscrete([10.0, 100.0, 1000.0])
 momentum=instru.var.OrderedDiscrete([0.1, 0.3, 0.5, 0.7, 0.9])
 margin=instru.var.OrderedDiscrete([0.1, 0.01, 0.001, 0.0001, 0.00001])
 lambda_=instru.var.OrderedDiscrete([0.1, 0.15, 0.20, 0.25, 0.30, 0.4, 0.50])
@@ -133,7 +134,7 @@ softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
 delta=instru.var.OrderedDiscrete([True, False])
 logdir=args.logdir
 
-instrum=instru.Instrumentation(lr, l2, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, checkpoint_path, softmax, delta, logdir)
+instrum=instru.Instrumentation(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, checkpoint_path, softmax, delta, logdir)
 
 hp_optimizer=optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
 

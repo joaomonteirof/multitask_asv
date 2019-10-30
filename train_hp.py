@@ -20,6 +20,7 @@ parser.add_argument('--epochs', type=int, default=500, metavar='N', help='number
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate (default: 0.001)')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='m', help='Momentum paprameter (default: 0.9)')
 parser.add_argument('--l2', type=float, default=1e-5, metavar='L2', help='Weight decay coefficient (default: 0.00001)')
+parser.add_argument('--max-gnorm', type=float, default=10., metavar='clip', help='Max gradient norm (default: 10.0)')
 parser.add_argument('--margin', type=float, default=0.3, metavar='m', help='margin fro triplet loss (default: 0.3)')
 parser.add_argument('--lamb', type=float, default=0.001, metavar='l', help='Entropy regularization penalty (default: 0.001)')
 parser.add_argument('--swap', type=str, default=None, help='Swaps anchor and positive depending on distance to negative example')
@@ -101,7 +102,7 @@ if args.cuda:
 
 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2)
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, margin=args.margin, lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda, logger=writer)
+trainer = TrainLoop(model, optimizer, train_loader, valid_loader, max_gnorm=args.max_gnorm, margin=args.margin, lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda, logger=writer)
 
 print('CP name: {}'.format(args.cp_name))
 print('Cuda Mode: {}'.format(args.cuda))
@@ -112,6 +113,7 @@ print('Batch size: {}'.format(args.batch_size))
 print('LR: {}'.format(args.lr))
 print('momentum: {}'.format(args.momentum))
 print('l2: {}'.format(args.l2))
+print('Max. grad norm: {}'.format(args.max_gnorm))
 print('lambda: {}'.format(args.lamb))
 print('Margin: {}'.format(args.margin))
 print('Swap: {}'.format(args.swap))
