@@ -12,7 +12,7 @@ from utils.utils import compute_eer
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, label_smoothing, warmup_its, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, softmax=False, pretrain=False, mining=False, cuda=True, logger=None):
+	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, label_smoothing, warmup_its, max_gnorm=10.0, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, softmax=False, pretrain=False, mining=False, cuda=True, logger=None):
 		if checkpoint_path is None:
 			# Save to current directory
 			self.checkpoint_path = os.getcwd()
@@ -30,6 +30,7 @@ class TrainLoop(object):
 		self.swap = swap
 		self.lambda_ = lambda_
 		self.optimizer = optimizer
+		self.max_gnorm = max_gnorm
 		self.train_loader = train_loader
 		self.valid_loader = valid_loader
 		self.total_iters = 0
@@ -233,11 +234,21 @@ class TrainLoop(object):
 			ce = self.ce_criterion(self.model.out_proj(out_norm, y), y)
 			loss += ce
 			loss.backward()
+			grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_gnorm)
 			self.optimizer.step()
+
+			if self.logger:
+				self.logger.add_scalar('Info/Grad_norm', grad_norm, self.total_iters)
+
 			return loss_log+ce.item(), ce.item()
 		else:
 			loss.backward()
+			grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_gnorm)
 			self.optimizer.step()
+
+			if self.logger:
+				self.logger.add_scalar('Info/Grad_norm', grad_norm, self.total_iters)
+
 			return loss_log
 
 	def pretrain_step(self, batch):
@@ -262,7 +273,12 @@ class TrainLoop(object):
 		loss = self.ce_criterion(self.model.out_proj(out_norm, y), y)
 
 		loss.backward()
+		grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_gnorm)
 		self.optimizer.step()
+
+		if self.logger:
+			self.logger.add_scalar('Info/Grad_norm', grad_norm, self.total_iters)
+
 		return loss.item()
 
 
