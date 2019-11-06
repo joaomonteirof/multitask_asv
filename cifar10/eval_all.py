@@ -37,6 +37,7 @@ if __name__ == '__main__':
 	cp_list = glob.glob(args.cp_path+'*.pt')
 
 	idxs_enroll, idxs_test, labels = create_trials_labels(labels_list)
+	print('\n{} trials created out of which {} are target trials'.format(len(idxs_enroll), np.sum(labels)))
 
 	best_model, best_eer = None, float('inf')
 
