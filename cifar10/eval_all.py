@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
 		cos_scores = np.asarray(cos_scores)
 		labels = np.asarray(labels)
-		model_id = cp.split('/')[-1])
+		model_id = cp.split('/')[-1]
 		eer, auc, avg_precision, acc, threshold = compute_metrics(labels, cos_scores)
 		print('\nCOS eval of model {}:'.format(model_id)
 		print('ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {}, {}, {}, {}, {}\n'.format(eer, auc, avg_precision, acc, threshold))
