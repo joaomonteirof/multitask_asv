@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
 	for cp in cp_list:
 
-		ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
+		ckpt = torch.load(cp, map_location = lambda storage, loc: storage)
 		try:
 			model.load_state_dict(ckpt['model_state'], strict=True)
 		except:
@@ -106,4 +106,4 @@ if __name__ == '__main__':
 		if eer<best_eer:
 			best_model, best_eer = model_id, eer
 
-		print('Best model and corresponding eer: {} - {}'.format(best_model, best_eer))
+	print('Best model and corresponding eer: {} - {}'.format(best_model, best_eer))
