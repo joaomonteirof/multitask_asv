@@ -8,6 +8,14 @@ import sys
 import pickle
 from time import sleep
 
+def get_sm_from_cp(ckpt):
+	keys=ckpt['model_state'].keys()
+	out_proj_params=[]
+	for x in keys:
+		elif 'out_proj' in x:
+			out_proj_params.append(x)
+	return 'am_softmax' if len(out_proj_params)==1 else 'softmax'
+
 def create_trials_labels(labels_list):
 
 	enroll_ex, test_ex, labels = [], [], []
