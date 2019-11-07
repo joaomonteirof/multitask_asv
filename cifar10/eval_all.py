@@ -104,6 +104,6 @@ if __name__ == '__main__':
 		print('\nCOS eval of model {}:'.format(model_id))
 		print('ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {}, {}, {}, {}, {}\n'.format(eer, auc, avg_precision, acc, threshold))
 		if eer<best_eer:
-			best_model, best_eer = model_id, eer
+			best_model, best_eer, best_auc = model_id, eer, auc
 
-	print('Best model and corresponding eer: {} - {}'.format(best_model, best_eer))
+	print('Best model and corresponding eer and auc: {} - {} - {}'.format(best_model, best_eer, best_auc))
