@@ -59,9 +59,7 @@ if __name__ == '__main__':
 	with torch.no_grad():
 
 		iterator = tqdm(test_loader, total=len(test_loader))
-		for i in iterator:
-
-		for batch in test_loader:
+		for batch in iterator:
 
 			x, y = batch
 
