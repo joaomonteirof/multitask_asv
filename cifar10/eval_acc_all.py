@@ -82,7 +82,7 @@ if __name__ == '__main__':
 		acc = 100.*correct/len(testset)
 		model_id = cp.split('/')[-1]
 
-		print('\nAccuracy of model {}: {}'.format(model_id, acc)
+		print('\nAccuracy of model {}: {}'.format(model_id, acc))
 
 		if acc<best_acc:
 			best_model, best_acc = model_id, acc
