@@ -8,6 +8,14 @@ import sys
 import pickle
 from time import sleep
 
+def get_sm_from_cp(ckpt):
+	keys=ckpt['model_state'].keys()
+	out_proj_params=[]
+	for x in keys:
+		if 'out_proj' in x:
+			out_proj_params.append(x)
+	return 'am_softmax' if len(out_proj_params)==1 else 'softmax'
+
 def set_np_randomseed(worker_id):
 	np.random.seed(np.random.get_state()[1][0]+worker_id)
 
