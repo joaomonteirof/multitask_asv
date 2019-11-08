@@ -16,6 +16,22 @@ def get_sm_from_cp(ckpt):
 			out_proj_params.append(x)
 	return 'am_softmax' if len(out_proj_params)==1 else 'softmax'
 
+def create_trials_labels(labels_list):
+
+	enroll_ex, test_ex, labels = [], [], []
+
+	for prod_exs in itertools.combinations(list(range(len(labels_list))), 2):
+
+		enroll_ex.append(prod_exs[0])
+		test_ex.append(prod_exs[1])
+
+		if labels_list[prod_exs[0]]==labels_list[prod_exs[1]]:
+			labels.append(1)
+		else:
+			labels.append(0)
+
+	return enroll_ex, test_ex, labels
+
 def set_np_randomseed(worker_id):
 	np.random.seed(np.random.get_state()[1][0]+worker_id)
 
