@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
 	for cp in cp_list:
 
-		ckpt = torch.load(pc, map_location = lambda storage, loc: storage)
+		ckpt = torch.load(cp, map_location = lambda storage, loc: storage)
 		softmax = get_sm_from_cp(ckpt)
 
 		if args.model == 'vgg':
