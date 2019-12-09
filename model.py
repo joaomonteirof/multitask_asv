@@ -1090,7 +1090,7 @@ class transformer_enc(nn.Module):
 			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True) )
 
-		self.transformer_encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=512, nhead=8, dim_feedforward=768, dropout=0.1), num_layers=5 )
+		self.transformer_encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(d_model=512, nhead=8, dim_feedforward=768, dropout=0.1), num_layers=5, norm=nn.LayerNorm(512) )
 
 		self.pooling = StatisticalPooling()
 
