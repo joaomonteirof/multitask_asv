@@ -35,7 +35,7 @@ def prep_feats(data_, max_dur, max_nchunks, delta=False):
 	if delta:
 		features = np.concatenate([features, delta_(features, width=3, order=1), delta_(features, width=3, order=2)], axis=1)
 
-	return torch.from_numpy(features).float()[:min(features.size(0), max_nchunks),...]
+	return torch.from_numpy(features).float()[:min(features.shape[0], max_nchunks),...]
 
 if __name__ == '__main__':
 
