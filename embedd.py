@@ -12,23 +12,30 @@ import scipy.io as sio
 from utils.utils import *
 from librosa.feature import delta as delta_
 
-def prep_feats(data_, delta=False):
+def prep_feats(data_, max_dur, max_nchunks, delta=False):
+	'''
+	data_ : [T, ncoef]
+	'''
 
-	#data_ = ( data_ - data_.mean(0) ) / data_.std(0)
+	features = (data_.T)[np.newaxis, np.newaxis, :, :]
 
-	features = data_.T
+	if features.shape[-1]<50:
+		mul = int(np.ceil(50/features.shape[-1]))
+		features = np.tile(features, (1, 1, 1, mul))
+		features = features[..., :50]
+	elif features.shape[-1]>max_dur:
+		sliced_data = []
+		idxs = strided_app(np.arange(features.shape[-1]), max_dur, max_dur//2)
+		for idx in idxs:
+			print(idx)
+			sliced_data.append(features[...,idx])
 
-	if features.shape[1]<50:
-		mul = int(np.ceil(50/features.shape[1]))
-		features = np.tile(features, (1, mul))
-		features = features[:, :50]
-
-	features = features[np.newaxis, :, :]
+		features = np.concatenate(sliced_data, axis=0)
 
 	if delta:
-		features = np.concatenate([features, delta_(features,width=3,order=1), delta_(features,width=3,order=2)], axis=0)
+		features = np.concatenate([features, delta_(features, width=3, order=1), delta_(features, width=3, order=2)], axis=1)
 
-	return torch.from_numpy(features[np.newaxis, :, :, :]).float()
+	return torch.from_numpy(features).float()[:min(features.size(0), max_nchunks),...]
 
 if __name__ == '__main__':
 
@@ -37,6 +44,8 @@ if __name__ == '__main__':
 	parser.add_argument('--path-to-more-data', type=str, default=None, metavar='Path', help='Path to input data')
 	parser.add_argument('--utt2spk', type=str, default=None, metavar='Path', help='Optional path for utt2spk')
 	parser.add_argument('--more-utt2spk', type=str, default=None, metavar='Path', help='Optional path for utt2spk')
+	parser.add_argument('--max-dur', type=int, default=800, metavar='S', help='Max duration in frames (default: 800)')
+	parser.add_argument('--max-nchunks', type=int, default=10, metavar='S', help='Max number of chunks for long files (default: 10)')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--out-path', type=str, default='./', metavar='Path', help='Path to output hdf file')
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
@@ -145,7 +154,7 @@ if __name__ == '__main__':
 						print('Skipping utterance '+ utt)
 						continue
 
-				feats = prep_feats(data[utt], args.delta)
+				feats = prep_feats(data[utt], args.max_dur, args.max_nchunks, args.delta)
 
 				try:
 					if args.cuda:
@@ -161,7 +170,7 @@ if __name__ == '__main__':
 
 				emb = emb[1] if args.inner else emb[0]
 				emb_enroll = F.normalize(emb, p=2, dim=1)
-				embeddings[utt] = emb.detach().cpu().numpy().squeeze()
+				embeddings[utt] = emb.mean(0).detach().cpu().numpy().squeeze()
 
 				if args.eps>0.0:
 					embeddings[utt] += args.eps*np.random.randn(embeddings[utt].shape[0])
