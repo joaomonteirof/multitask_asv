@@ -2,7 +2,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn.init as init
 import torch.nn.functional as F
-
+from data_load import Loader
 import numpy as np
 import os
 from tqdm import tqdm
@@ -49,6 +49,8 @@ class TrainLoop(object):
 		while self.cur_epoch < n_epochs:
 
 			np.random.seed()
+			if isinstance(self.train_loader.dataset, Loader):
+				self.train_loader.dataset.update_lists()
 
 			if self.verbose>0:
 				print(' ')
@@ -125,19 +127,18 @@ class TrainLoop(object):
 
 		self.optimizer.zero_grad()
 
-		x, y = batch
+		if isinstance(self.train_loader.dataset, Loader):
+			x_1, x_2, x_3, x_4, x_5, y = batch
+			x = torch.cat([x_1, x_2, x_3, x_4, x_5], dim=0)
+			y = torch.cat(5*[y], dim=0).squeeze().contiguous()
+		else:
+			x, y = batch
 
 		if self.cuda_mode:
 			x = x.to(self.device, non_blocking=True)
 			y = y.to(self.device, non_blocking=True)
 
-
-		#x = x.view(x.size(0)*x.size(1), x.size(2), x.size(3), x.size(4))
-		#y = y.view(y.size(0)*y.size(1))
-
 		embeddings = self.model.forward(x)
-
-		embeddings = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
 		loss_class = torch.nn.CrossEntropyLoss()(self.model.out_proj(embeddings_norm, y), y)

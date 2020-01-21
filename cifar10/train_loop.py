@@ -141,13 +141,8 @@ class TrainLoop(object):
 			x = x.to(self.device)
 			y = y.to(self.device)
 
-
-		#x = x.view(x.size(0)*x.size(1), x.size(2), x.size(3), x.size(4))
-		#y = y.view(y.size(0)*y.size(1))
-
 		embeddings = self.model.forward(x)
 
-		embeddings = torch.div(embeddings, torch.norm(embeddings, 2, 1).unsqueeze(1).expand_as(embeddings))
 		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
 		loss_class = torch.nn.CrossEntropyLoss()(self.model.out_proj(embeddings_norm, y), y)
