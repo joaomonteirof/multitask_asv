@@ -1,12 +1,17 @@
 import numpy as np
 from sklearn import metrics
-
+from numpy.lib.stride_tricks import as_strided
 import torch
 import itertools
 import os
 import sys
 import pickle
 from time import sleep
+
+def strided_app(a, L, S):
+	nrows = ( (len(a)-L) // S ) + 1
+	n = a.strides[0]
+	return as_strided(a, shape=(nrows, L), strides=(S*n,n))
 
 def get_sm_from_cp(ckpt):
 	keys=ckpt['model_state'].keys()
