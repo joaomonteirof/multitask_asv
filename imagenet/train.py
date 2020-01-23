@@ -43,6 +43,8 @@ parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='sof
 args = parser.parse_args()
 args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
+print(args, '\n')
+
 if args.cuda:
 	torch.backends.cudnn.benchmark=True
 
@@ -55,7 +57,7 @@ else:
 
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers, worker_init_fn=set_np_randomseed, pin_memory=True)
 
-if arg.valid_hdf_path:
+if args.valid_hdf_path:
 	transform_test = transforms.Compose([transforms.ToPILImage(), transforms.CenterCrop(224), transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 	validset = Loader(args.valid_hdf_path, transform_train)
 else:
