@@ -9,11 +9,11 @@ from tqdm import tqdm
 
 from harvester import HardestNegativeTripletSelector, AllTripletSelector
 
-from utils import compute_eer
+from utils import compute_eer, adjust_learning_rate, correct_topk
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, patience, verbose=-1, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, cuda=True):
+	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, verbose=-1, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, cuda=True):
 		if checkpoint_path is None:
 			# Save to current directory
 			self.checkpoint_path = os.getcwd()
@@ -28,8 +28,7 @@ class TrainLoop(object):
 		self.optimizer = optimizer
 		self.train_loader = train_loader
 		self.valid_loader = valid_loader
-		self.history = {'train_loss': [], 'train_loss_batch': [], 'triplet_loss': [], 'triplet_loss_batch': [], 'ce_loss': [], 'ce_loss_batch': [], 'EER': [], 'ErrorRate':[]}
-		self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.5, patience=patience, verbose=True if verbose>0 else False, threshold=1e-4, min_lr=1e-8)
+		self.history = {'train_loss': [], 'train_loss_batch': [], 'triplet_loss': [], 'triplet_loss_batch': [], 'ce_loss': [], 'ce_loss_batch': [], 'EER': [], 'acc_1':[], 'acc_5':[]}
 		self.total_iters = 0
 		self.cur_epoch = 0
 		self.lambda_ = lambda_
@@ -40,6 +39,7 @@ class TrainLoop(object):
 		self.verbose = verbose
 		self.save_cp = save_cp
 		self.device = next(self.model.parameters()).device
+		self.base_lr = self.optimizer.param_groups[0]['lr']
 
 		if checkpoint_epoch is not None:
 			self.load_checkpoint(self.save_epoch_fmt.format(checkpoint_epoch))
@@ -51,6 +51,8 @@ class TrainLoop(object):
 			np.random.seed()
 			if isinstance(self.train_loader.dataset, Loader):
 				self.train_loader.dataset.update_lists()
+
+			adjust_learning_rate(self.optimizer, self.cur_epoch, self.base_lr)
 
 			if self.verbose>0:
 				print(' ')
@@ -84,12 +86,12 @@ class TrainLoop(object):
 
 			# Validation
 
-			tot_correct, tot_ = 0, 0
+			tot_correct_1, tot_correct_5, tot_ = 0, 0, 0
 			scores, labels = None, None
 
 			for t, batch in enumerate(self.valid_loader):
 
-				correct, total, scores_batch, labels_batch = self.valid(batch)
+				correct_1, correct_5, total, scores_batch, labels_batch = self.valid(batch)
 
 				try:
 					scores = np.concatenate([scores, scores_batch], 0)
@@ -97,18 +99,19 @@ class TrainLoop(object):
 				except:
 					scores, labels = scores_batch, labels_batch
 
-				tot_correct += correct
+				tot_correct_1 += correct_1
+				tot_correct_5 += correct_5
 				tot_ += total
 
 			self.history['EER'].append(compute_eer(labels, scores))
-			self.history['ErrorRate'].append(1.-float(tot_correct)/tot_)
+			self.history['acc_1'].append(float(tot_correct_1)/tot_)
+			self.history['acc_5'].append(float(tot_correct_5)/tot_)
 
 			if self.verbose>0:
 				print(' ')
 				print('Current, best validation EER, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['EER'][-1], np.min(self.history['EER']), 1+np.argmin(self.history['EER'])))
-				print('Current Error rate, best Error rate, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['ErrorRate'][-1], np.min(self.history['ErrorRate']), 1+np.argmin(self.history['ErrorRate'])))
-
-			self.scheduler.step(self.history['EER'][-1])
+				print('Current Top 1 Acc, best Top 1 Acc, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['acc_1'][-1], np.max(self.history['acc_1']), 1+np.argmax(self.history['acc_1'])))
+				print('Current Top 5 Acc, best Top 5 Acc, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['acc_5'][-1], np.max(self.history['acc_5']), 1+np.argmax(self.history['acc_5'])))
 
 			if self.verbose>0:
 				print(' ')
@@ -193,8 +196,8 @@ class TrainLoop(object):
 
 			out = self.model.out_proj(embeddings_norm, y)
 
-			pred = F.softmax(out, dim=1).max(1)[1].long()
-			correct = pred.squeeze().eq(y.squeeze()).detach().sum().item()
+			pred = F.softmax(out, dim=1)
+			(correct_1, correct_5) = correct_topk(pred, y, (1,5))
 
 			triplets_idx = self.harvester_val.get_triplets(embeddings, y)
 
@@ -207,7 +210,7 @@ class TrainLoop(object):
 			scores_p = F.cosine_similarity(emb_a, emb_p)
 			scores_n = F.cosine_similarity(emb_a, emb_n)
 
-		return correct, x.size(0), np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0)
+		return correct_1, correct_5, x.size(0), np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0)
 
 	def triplet_loss(self, emba, embp, embn, reduce_=True):
 
@@ -223,7 +226,6 @@ class TrainLoop(object):
 			print('Checkpointing...')
 		ckpt = {'model_state': self.model.state_dict(),
 		'optimizer_state': self.optimizer.state_dict(),
-		'scheduler_state': self.scheduler.state_dict(),
 		'history': self.history,
 		'total_iters': self.total_iters,
 		'cur_epoch': self.cur_epoch}
@@ -242,8 +244,6 @@ class TrainLoop(object):
 			self.model.load_state_dict(ckpt['model_state'])
 			# Load optimizer state
 			self.optimizer.load_state_dict(ckpt['optimizer_state'])
-			# Load scheduler state
-			self.scheduler.load_state_dict(ckpt['scheduler_state'])
 			# Load history
 			self.history = ckpt['history']
 			self.total_iters = ckpt['total_iters']
