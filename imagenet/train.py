@@ -24,6 +24,7 @@ parser.add_argument('--l2', type=float, default=5e-4, metavar='lambda', help='L2
 parser.add_argument('--margin', type=float, default=0.3, metavar='m', help='margin fro triplet loss (default: 0.3)')
 parser.add_argument('--lamb', type=float, default=0.1, metavar='l', help='Entropy regularization penalty (default: 0.1)')
 parser.add_argument('--swap', action='store_true', default=False, help='Swaps anchor and positive depending on distance to negative example')
+parser.add_argument('--pretrained', action='store_true', default=False, help='Get pretrained weights on imagenet')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='lambda', help='Momentum (default: 0.9)')
 parser.add_argument('--checkpoint-epoch', type=int, default=None, metavar='N', help='epoch to load for checkpointing. If None, training starts from scratch')
 parser.add_argument('--checkpoint-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
@@ -48,10 +49,10 @@ if args.cuda:
 	torch.backends.cudnn.benchmark=True
 
 if args.hdf_path:
-	transform_train = transforms.Compose([transforms.ToPILImage(), transforms.Resize(256), transforms.RandomCrop(224, padding=4), transforms.RandomHorizontalFlip(), transforms.RandomRotation(30), transforms.RandomGrayscale(), transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])	
+	transform_train = transforms.Compose([transforms.ToPILImage(), transforms.Resize(256), transforms.RandomCrop(224, padding=4), transforms.RandomHorizontalFlip(), transforms.RandomRotation(30), transforms.ColorJitter(brightness=2), transforms.RandomGrayscale(), transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])	
 	trainset = Loader(args.hdf_path, transform_train)
 else:
-	transform_train = transforms.Compose([transforms.Resize(256), transforms.RandomCrop(224, padding=4), transforms.RandomHorizontalFlip(), transforms.RandomRotation(30), transforms.RandomGrayscale(), transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])	
+	transform_train = transforms.Compose([transforms.Resize(256), transforms.RandomCrop(224, padding=4), transforms.RandomHorizontalFlip(), transforms.RandomRotation(30), transforms.ColorJitter(brightness=2), transforms.RandomGrayscale(), transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])	
 	trainset = datasets.ImageFolder(args.data_path, transform=transform_train)
 
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=args.n_workers, worker_init_fn=set_np_randomseed, pin_memory=True)
@@ -71,6 +72,18 @@ elif args.model == 'resnet':
 	model = resnet.ResNet50(sm_type=args.softmax)
 elif args.model == 'densenet':
 	model = densenet.DenseNet121(sm_type=args.softmax)
+
+if args.pretrained:
+	print('\nLoading pretrained model\n')
+	if args.model == 'vgg':
+		model_pretrained = torchvision.models.vgg19(pretrained=True)
+	elif args.model == 'resnet':
+		model_pretrained = torchvision.models.resnet50(pretrained=True)
+	elif args.model == 'densenet':
+		model_pretrained = torchvision.models.densenet121(pretrained=True)
+
+	print(model.load_state_dict(model_pretrained.state_dict(), strict=False))
+	print('\n')
 
 if args.cuda:
 	device = get_freer_gpu()
