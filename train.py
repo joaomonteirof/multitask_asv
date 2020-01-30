@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse
 import torch
+import torchvision
 from train_loop import TrainLoop
 import torch.optim as optim
 import torch.utils.data
