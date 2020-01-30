@@ -40,6 +40,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False, help='Disab
 parser.add_argument('--no-cp', action='store_true', default=False, help='Disables checkpointing')
 parser.add_argument('--verbose', type=int, default=1, metavar='N', help='Verbose is activated if > 0')
 parser.add_argument('--softmax', choices=['softmax', 'am_softmax'], default='softmax', help='Softmax type')
+parser.add_argument('--nclasses', type=int, default=1000, metavar='N', help='number of classes (default: 1000)')
 args = parser.parse_args()
 args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
@@ -67,11 +68,11 @@ else:
 valid_loader = torch.utils.data.DataLoader(validset, batch_size=args.valid_batch_size, shuffle=True, num_workers=args.n_workers, pin_memory=True)
 
 if args.model == 'vgg':
-	model = vgg.VGG('VGG19', sm_type=args.softmax)
+	model = vgg.VGG('VGG19', sm_type=args.softmax, n_classes=args.nclasses)
 elif args.model == 'resnet':
-	model = resnet.ResNet50(sm_type=args.softmax)
+	model = resnet.ResNet50(sm_type=args.softmax, n_classes=args.nclasses)
 elif args.model == 'densenet':
-	model = densenet.DenseNet121(sm_type=args.softmax)
+	model = densenet.DenseNet121(sm_type=args.softmax, n_classes=args.nclasses)
 
 if args.pretrained:
 	print('\nLoading pretrained model\n')
@@ -104,5 +105,6 @@ if args.verbose >0:
 	print('Margin: {}'.format(args.margin))
 	print('Swap: {}'.format(args.swap))
 	print('Softmax Mode is: {}'.format(args.softmax))
+	print('Number of classes is: {}'.format(args.nclasses))
 
 trainer.train(n_epochs=args.epochs, save_every=args.save_every)

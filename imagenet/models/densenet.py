@@ -41,6 +41,8 @@ class DenseNet(nn.Module):
 		super(DenseNet, self).__init__()
 		self.growth_rate = growth_rate
 
+		self.n_classes = num_classes
+
 		num_planes = 2*growth_rate
 		self.conv1 = nn.Conv2d(3, num_planes, kernel_size=7, padding=1, bias=False)
 
@@ -95,17 +97,17 @@ class DenseNet(nn.Module):
 
 		return out
 
-def DenseNet121(sm_type='softmax'):
-	return DenseNet(Bottleneck, [6,12,24,16], sm_type, growth_rate=32)
+def DenseNet121(sm_type='softmax', n_classes=1000):
+	return DenseNet(Bottleneck, [6,12,24,16], sm_type, growth_rate=32, num_classes=n_classes)
 
 def DenseNet169(sm_type='softmax'):
-	return DenseNet(Bottleneck, [6,12,32,32], sm_type, growth_rate=32)
+	return DenseNet(Bottleneck, [6,12,32,32], sm_type, growth_rate=32, num_classes=n_classes)
 
 def DenseNet201(sm_type='softmax'):
-	return DenseNet(Bottleneck, [6,12,48,32], sm_type, growth_rate=32)
+	return DenseNet(Bottleneck, [6,12,48,32], sm_type, growth_rate=32, num_classes=n_classes)
 
 def DenseNet161(sm_type='softmax'):
-	return DenseNet(Bottleneck, [6,12,36,24], sm_type, growth_rate=48)
+	return DenseNet(Bottleneck, [6,12,36,24], sm_type, growth_rate=48, num_classes=n_classes)
 
 def densenet_cifar(sm_type='softmax'):
-	return DenseNet(Bottleneck, [6,12,24,16], sm_type, growth_rate=12)
+	return DenseNet(Bottleneck, [6,12,24,16], sm_type, growth_rate=12, num_classes=n_classes)

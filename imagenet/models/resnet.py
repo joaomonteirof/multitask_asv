@@ -118,6 +118,7 @@ class ResNet(nn.Module):
 		if norm_layer is None:
 			norm_layer = nn.BatchNorm2d
 		self._norm_layer = norm_layer
+		self.n_classes = num_classes
 
 		self.inplanes = 64
 		self.dilation = 1
@@ -208,17 +209,17 @@ class ResNet(nn.Module):
 
 		return x
 
-def ResNet18(sm_type='softmax'):
-	return ResNet(BasicBlock, [2,2,2,2], sm_type)
+def ResNet18(sm_type='softmax', n_classes=1000):
+	return ResNet(BasicBlock, [2,2,2,2], sm_type, num_classes=n_classes)
 
-def ResNet34(sm_type='softmax'):
-	return ResNet(BasicBlock, [3,4,6,3], sm_type)
+def ResNet34(sm_type='softmax', n_classes=1000):
+	return ResNet(BasicBlock, [3,4,6,3], sm_type, num_classes=n_classes)
 
-def ResNet50(sm_type='softmax'):
-	return ResNet(Bottleneck, [3,4,6,3], sm_type)
+def ResNet50(sm_type='softmax', n_classes=1000):
+	return ResNet(Bottleneck, [3,4,6,3], sm_type, num_classes=n_classes)
 
-def ResNet101(sm_type='softmax'):
-	return ResNet(Bottleneck, [3,4,23,3], sm_type)
+def ResNet101(sm_type='softmax', n_classes=1000):
+	return ResNet(Bottleneck, [3,4,23,3], sm_type, num_classes=n_classes)
 
-def ResNet152(sm_type='softmax'):
-	return ResNet(Bottleneck, [3,8,36,3], sm_type)
+def ResNet152(sm_type='softmax', n_classes=1000):
+	return ResNet(Bottleneck, [3,8,36,3], sm_type, num_classes=n_classes)
