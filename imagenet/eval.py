@@ -45,8 +45,36 @@ if __name__ == '__main__':
 	if args.cuda:
 		device = get_freer_gpu()
 		model = model.cuda(device)
+	else:
+		device = torch.device('cpu')
 
-	idxs_enroll, idxs_test, labels = create_trials_labels(labels_list)
+	embeddings = []
+	labels = []
+
+	model.eval()
+
+	iterator = tqdm(valid_loader, total=len(valid_loader))
+
+	with torch.no_grad():
+
+		for batch in iterator:
+
+			x, y = batch
+
+			if args.cuda:
+				x = x.to(device)
+
+			emb = model.forward(x).detach()
+
+			embeddings.append(emb.detach().cpu())
+			labels.append(y)
+
+	embeddings = torch.cat(embeddings, 0)
+	labels = list(torch.cat(labels, 0).squeeze().numpy())
+
+	print('\nEmbedding done')
+
+	idxs_enroll, idxs_test, labels = create_trials_labels(labels)
 	print('\n{} trials created out of which {} are target trials'.format(len(idxs_enroll), np.sum(labels)))
 
 	cos_scores = []
@@ -58,40 +86,20 @@ if __name__ == '__main__':
 
 	with torch.no_grad():
 
-		iterator = tqdm(range(len(labels)), total=len(labels))
-		for i in iterator:
+		iterator = tqdm(enumerate(labels), total=len(labels))
+		for i in range(0, len(labels), args.batch_size):
 
-			enroll_ex = str(idxs_enroll[i])
+			enroll_ex = idxs_enroll[i:(min(i+args.batch_size, len(labels)))]
+			test_ex = idxs_test[i:(min(i+args.batch_size, len(labels)))]
 
-			try:
-				emb_enroll = mem_embeddings[enroll_ex]
-			except KeyError:
+			enroll_emb = embeddings[enroll_ex,:].to(device)
+			test_emb = embeddings[test_ex,:].to(device)
 
-				enroll_ex_data = validset[idxs_enroll[i]][0].unsqueeze(0)
-
-				if args.cuda:
-					enroll_ex_data = enroll_ex_data.cuda(device)
-
-				emb_enroll = model.forward(enroll_ex_data).detach()
-				mem_embeddings[str(idxs_enroll[i])] = emb_enroll
-
-			test_ex = str(idxs_test[i])
-
-			try:
-				emb_test = mem_embeddings[test_ex]
-			except KeyError:
-
-				test_ex_data = validset[idxs_test[i]][0].unsqueeze(0)
-
-				if args.cuda:
-					test_ex_data = test_ex_data.cuda(device)
-
-				emb_test = model.forward(test_ex_data).detach()
-				mem_embeddings[str(idxs_test[i])] = emb_test
-
-			cos_scores.append( torch.nn.functional.cosine_similarity(emb_enroll, emb_test).mean().item() )
-
-			out_cos.append([str(idxs_enroll[i]), str(idxs_test[i]), cos_scores[-1]])
+			dist_cos = torch.nn.functional.cosine_similarity(enroll_emb, test_emb)
+				
+			for k in range(dist_cos.size(0)):
+				cos_scores.append( dist_cos[k].item() )
+				out_e2e.append([str(idxs_enroll[i+k]), str(idxs_test[i+k]), e2e_scores[-1]])
 
 	print('\nScoring done')
 
