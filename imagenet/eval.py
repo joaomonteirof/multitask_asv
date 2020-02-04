@@ -103,7 +103,7 @@ if __name__ == '__main__':
 				
 			for k in range(dist_cos.size(0)):
 				cos_scores.append( dist_cos[k].item() )
-				out_e2e.append([str(idxs_enroll[i+k]), str(idxs_test[i+k]), e2e_scores[-1]])
+				out_cos.append([str(idxs_enroll[i+k]), str(idxs_test[i+k]), cos_scores[-1]])
 
 	print('\nScoring done')
 
