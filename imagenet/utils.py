@@ -43,11 +43,11 @@ def get_sm_from_cp(ckpt):
 			out_proj_params.append(x)
 	return 'am_softmax' if len(out_proj_params)==1 else 'softmax'
 
-def create_trials_labels(labels_list):
+def create_trials_labels(labels_list, max_n_trials=1e6):
 
 	enroll_ex, test_ex, labels = [], [], []
 
-	for prod_exs in itertools.combinations(list(range(len(labels_list))), 2):
+	for i, prod_exs in enumerate(itertools.combinations(list(range(len(labels_list))), 2)):
 
 		enroll_ex.append(prod_exs[0])
 		test_ex.append(prod_exs[1])
@@ -56,6 +56,8 @@ def create_trials_labels(labels_list):
 			labels.append(1)
 		else:
 			labels.append(0)
+
+		if i>=max_n_trials: break
 
 	return enroll_ex, test_ex, labels
 
