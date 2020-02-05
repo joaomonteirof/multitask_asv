@@ -92,7 +92,7 @@ if __name__ == '__main__':
 	with torch.no_grad():
 
 		iterator = tqdm(range(0, len(labels), args.batch_size), total=n_batches)
-		for i in :
+		for i in iterator:
 
 			enroll_ex = idxs_enroll[i:(min(i+args.batch_size, len(labels)))]
 			test_ex = idxs_test[i:(min(i+args.batch_size, len(labels)))]
