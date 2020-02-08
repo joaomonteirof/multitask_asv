@@ -149,9 +149,11 @@ class TrainLoop(object):
 
 		embeddings, out = self.model.forward(x)
 
+		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+
 		loss_class = torch.nn.CrossEntropyLoss()(self.model.out_proj(out, y), y)
 
-		triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings.detach(), y)
+		triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
 
 		if self.cuda_mode:
 			triplets_idx = triplets_idx.to(self.device, non_blocking=True)
