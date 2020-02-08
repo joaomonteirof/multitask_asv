@@ -69,12 +69,12 @@ class DenseNet(nn.Module):
 
 		self.bn = nn.BatchNorm2d(num_planes)
 
-		self.lin_proj = nn.Sequential(nn.Linear(1024*6*6, 1024), nn.ReLU(True), nn.Dropout(0.1), nn.Linear(1024, 512))
+		self.lin_proj = nn.Sequential(nn.Linear(1024*6*6, 350))
 
 		if sm_type=='softmax':
-			self.out_proj=Softmax(input_features=512, output_features=num_classes)
+			self.out_proj=Softmax(input_features=1024*6*6, output_features=num_classes)
 		elif sm_type=='am_softmax':
-			self.out_proj=AMSoftmax(input_features=512, output_features=num_classes)
+			self.out_proj=AMSoftmax(input_features=1024*6*6, output_features=num_classes)
 		else:
 			raise NotImplementedError
 
@@ -93,9 +93,9 @@ class DenseNet(nn.Module):
 		out = self.dense4(out)
 		out = F.avg_pool2d(F.relu(self.bn(out)), 4)
 		out = out.view(out.size(0), -1)
-		out = self.lin_proj(out)
+		emb = self.lin_proj(out)
 
-		return out
+		return emb, out
 
 def DenseNet121(sm_type='softmax', n_classes=1000):
 	return DenseNet(Bottleneck, [6,12,24,16], sm_type, growth_rate=32, num_classes=n_classes)

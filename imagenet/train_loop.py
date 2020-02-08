@@ -147,10 +147,9 @@ class TrainLoop(object):
 			x = x.to(self.device, non_blocking=True)
 			y = y.to(self.device, non_blocking=True)
 
-		embeddings = self.model.forward(x)
-		embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+		embeddings, out = self.model.forward(x)
 
-		loss_class = torch.nn.CrossEntropyLoss()(self.model.out_proj(embeddings_norm, y), y)
+		loss_class = torch.nn.CrossEntropyLoss()(self.model.out_proj(out, y), y)
 
 		triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
 
@@ -191,17 +190,14 @@ class TrainLoop(object):
 				x = x.to(self.device, non_blocking=True)
 				y = y.to(self.device, non_blocking=True)
 
-			embeddings = self.model.forward(x)
-			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+			embeddings, out = self.model.forward(x)
 
-			out = self.model.out_proj(embeddings_norm, y)
+			out = self.model.out_proj(out, y)
 
 			pred = F.softmax(out, dim=1)
 			(correct_1, correct_5) = correct_topk(pred, y, (1,5))
 
 			triplets_idx = self.harvester_val.get_triplets(embeddings, y)
-
-			embeddings = embeddings.cpu()
 
 			emb_a = torch.index_select(embeddings, 0, triplets_idx[:, 0])
 			emb_p = torch.index_select(embeddings, 0, triplets_idx[:, 1])

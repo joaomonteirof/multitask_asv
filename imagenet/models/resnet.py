@@ -141,12 +141,12 @@ class ResNet(nn.Module):
 		self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
 		self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-		self.lin_proj = nn.Sequential(nn.Linear(512*block.expansion, 1024), nn.ReLU(True), nn.Dropout(0.1), nn.Linear(1024, 512))
+		self.lin_proj = nn.Sequential(nn.Linear(512*block.expansion, 350))
 
 		if sm_type=='softmax':
-			self.out_proj=Softmax(input_features=512, output_features=num_classes)
+			self.out_proj=Softmax(input_features=512*block.expansion, output_features=num_classes)
 		elif sm_type=='am_softmax':
-			self.out_proj=AMSoftmax(input_features=512, output_features=num_classes)
+			self.out_proj=AMSoftmax(input_features=512*block.expansion, output_features=num_classes)
 		else:
 			raise NotImplementedError
 
@@ -204,10 +204,10 @@ class ResNet(nn.Module):
 		x = self.layer4(x)
 
 		x = self.avgpool(x)
-		x = torch.flatten(x, 1)
-		x = self.lin_proj(x)
+		x_out = torch.flatten(x, 1)
+		x_emb = self.lin_proj(x_out)
 
-		return x
+		return x_emb, x_out
 
 def ResNet18(sm_type='softmax', n_classes=1000):
 	return ResNet(BasicBlock, [2,2,2,2], sm_type, num_classes=n_classes)
