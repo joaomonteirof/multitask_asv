@@ -201,6 +201,9 @@ class TrainLoop(object):
 
 			triplets_idx = self.harvester_val.get_triplets(embeddings, y)
 
+			if self.cuda_mode:
+				triplets_idx = triplets_idx.to(self.device, non_blocking=True)
+
 			emb_a = torch.index_select(embeddings, 0, triplets_idx[:, 0])
 			emb_p = torch.index_select(embeddings, 0, triplets_idx[:, 1])
 			emb_n = torch.index_select(embeddings, 0, triplets_idx[:, 2])
