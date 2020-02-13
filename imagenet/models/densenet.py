@@ -69,7 +69,7 @@ class DenseNet(nn.Module):
 
 		self.bn = nn.BatchNorm2d(num_planes)
 
-		self.lin_proj = nn.Sequential(nn.Linear(1024*6*6, 350))
+		self.lin_proj = nn.Sequential(nn.Linear(1024*6*6, 128))
 
 		if sm_type=='softmax':
 			self.out_proj=Softmax(input_features=1024*6*6, output_features=num_classes)

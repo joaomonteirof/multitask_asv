@@ -141,7 +141,7 @@ class ResNet(nn.Module):
 		self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
 		self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-		self.lin_proj = nn.Sequential(nn.Linear(512*block.expansion, 350))
+		self.lin_proj = nn.Sequential(nn.Linear(512*block.expansion, 128))
 
 		if sm_type=='softmax':
 			self.out_proj=Softmax(input_features=512*block.expansion, output_features=num_classes)

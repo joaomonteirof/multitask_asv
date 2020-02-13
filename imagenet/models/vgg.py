@@ -22,7 +22,7 @@ class VGG(nn.Module):
 		
 		self.features = self._make_layers(cfg[vgg_name])
 		self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
-		self.lin_proj = nn.Sequential(nn.Linear(512 * 7 * 7, 350))
+		self.lin_proj = nn.Sequential(nn.Linear(512 * 7 * 7, 128))
 
 		if sm_type=='softmax':
 			self.out_proj=Softmax(input_features=512 * 7 * 7, output_features=self.n_classes)
