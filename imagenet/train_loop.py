@@ -214,7 +214,7 @@ class TrainLoop(object):
 
 		loss_metric = self.triplet_loss(emb_a, emb_p, emb_n)
 
-		loss = loss_class + loss_metric
+		loss = ce_loss + loss_metric
 
 		entropy_regularizer = torch.nn.functional.pairwise_distance(embeddings_norm, embeddings_norm[entropy_indices,:]).mean()
 		loss -= entropy_regularizer*self.lambda_
