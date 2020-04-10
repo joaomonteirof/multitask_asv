@@ -1,6 +1,7 @@
 import numpy as np
-from sklearn import metrics
 from numpy.lib.stride_tricks import as_strided
+from sklearn import metrics
+
 import torch
 import itertools
 import os
@@ -8,9 +9,17 @@ import sys
 import pickle
 from time import sleep
 
-def adjust_learning_rate(optimizer, epoch, base_lr):
-	"""Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-	lr = base_lr * (0.1 ** (epoch // 30))
+def parse_args_for_log(args):
+	args_dict = dict(vars(args))
+	for arg_key in args_dict:
+		if args_dict[arg_key] is None:
+			args_dict[arg_key] = 'None'
+
+	return args_dict
+
+def adjust_learning_rate(optimizer, epoch, base_lr, n_epochs, lr_factor, min_lr=1e-8):
+	"""Sets the learning rate to the initial LR decayed by 10 every n_epochs epochs"""
+	lr = max( base_lr * (lr_factor ** (epoch // n_epochs)), min_lr )
 	for param_group in optimizer.param_groups:
 		param_group['lr'] = lr
 
@@ -35,13 +44,24 @@ def strided_app(a, L, S):
 	n = a.strides[0]
 	return as_strided(a, shape=(nrows, L), strides=(S*n,n))
 
-def get_sm_from_cp(ckpt):
+def get_classifier_config_from_cp(ckpt):
 	keys=ckpt['model_state'].keys()
+	classifier_params=[]
 	out_proj_params=[]
 	for x in keys:
-		if 'out_proj' in x:
+		if 'classifier' in x:
+			classifier_params.append(x)
+		elif 'out_proj' in x:
 			out_proj_params.append(x)
-	return 'am_softmax' if len(out_proj_params)==1 else 'softmax'
+	
+	n_hidden, hidden_size, softmax = max(len(classifier_params)//2 - 1, 1), ckpt['model_state']['classifier.0.weight'].size(0), 'am_softmax' if len(out_proj_params)==1 else 'softmax'
+
+	if softmax == 'am_softmax':
+		n_classes = ckpt['model_state']['out_proj.w'].size(1)
+	elif softmax == 'softmax':
+		n_classes = ckpt['model_state']['out_proj.w.weight'].size(0)
+
+	return n_hidden, hidden_size, softmax, n_classes
 
 def create_trials_labels(labels_list, max_n_trials=1e8):
 

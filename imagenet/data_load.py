@@ -88,8 +88,8 @@ if __name__=='__main__':
 	print('Dataset length: {}, {}'.format(len(loader.dataset), len(loader.dataset.example_list)))
 
 	for batch in loader:
-		utt_1, utt_2, utt_3, utt_4, y = batch
+		utt_1, utt_2, utt_3, utt_4, utt_5, y = batch
 
-	print(utt_1.size(), utt_2.size(), utt_3.size(), utt_4.size(), y.size())
+	print(utt_1.size(), utt_2.size(), utt_3.size(), utt_4.size(), utt_5.size(), y.size())
 
 	print(y)
