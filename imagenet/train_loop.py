@@ -205,7 +205,7 @@ class TrainLoop(object):
 		ce_loss = self.ce_criterion(self.model.out_proj(out, y), y)
 
 		# Get all triplets now for bin classifier
-		triplets_idx = self.harvester.get_triplets(embeddings_norm.detach(), y)
+		triplets_idx, entropy_indices = self.harvester.get_triplets(embeddings_norm.detach(), y)
 		triplets_idx = triplets_idx.to(self.device, non_blocking=True)
 
 		emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
