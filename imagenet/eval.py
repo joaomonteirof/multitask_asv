@@ -35,7 +35,7 @@ if __name__ == '__main__':
 	elif args.model == 'resnet':
 		model = resnet.ResNet50()
 	elif args.model == 'DenseNet121':
-		model = densenet.densenet_cifar()
+		model = densenet.DenseNet121()
 
 	ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 	try:
