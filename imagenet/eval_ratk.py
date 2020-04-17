@@ -134,7 +134,7 @@ if __name__ == '__main__':
 				test_emb = embeddings[j:(min(j+args.batch_size, len(embeddings))),:].to(device)
 				enroll_emb_repeated = enroll_emb.repeat(test_emb.size(0), 1)
 
-				dist_cos = torch.nn.functional.cosine_similarity(enroll_emb_repeated, test_emb)
+				dist_cos = torch.nn.functional.pairwise_distance(enroll_emb_repeated, test_emb)
 				
 				for l in range(dist_cos.size(0)):
 
@@ -142,7 +142,7 @@ if __name__ == '__main__':
 
 					cos_scores.append( [dist_cos[l].item(), labels[j+l]] )
 
-			sorted_cos_classes = np.array(sorted(cos_scores, reverse=True))[:,1]
+			sorted_cos_classes = np.array(sorted(cos_scores, reverse=False))[:,1]
 
 			for k in args.k_list:
 				if label in sorted_cos_classes[:k]:
