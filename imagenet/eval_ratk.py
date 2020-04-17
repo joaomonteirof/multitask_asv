@@ -1,6 +1,7 @@
 from __future__ import print_function
 import argparse
 import torch
+import torchvision
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from models import vgg, resnet, densenet
