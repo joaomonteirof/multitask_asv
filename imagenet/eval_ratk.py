@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
 				dist_cos = torch.nn.functional.cosine_similarity(enroll_emb_repeated, test_emb)
 				
-				for l in range(cos.size(0)):
+				for l in range(dist_cos.size(0)):
 
 					if i==(j+l): continue ## skip same example
 
