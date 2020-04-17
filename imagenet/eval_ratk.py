@@ -46,9 +46,7 @@ if __name__ == '__main__':
 	validset = datasets.ImageFolder(args.data_path, transform=transform_test)
 	valid_loader = torch.utils.data.DataLoader(validset, batch_size=args.batch_size, shuffle=False, num_workers=args.n_workers)
 
-	r_at_k_e2e = {'R@'+str(x):0 for x in args.k_list}
 	r_at_k_cos = {'R@'+str(x):0 for x in args.k_list}
-	r_at_k_fus = {'R@'+str(x):0 for x in args.k_list}
 
 	if args.model == 'vgg':
 		model = vgg.VGG('VGG19')
@@ -129,7 +127,7 @@ if __name__ == '__main__':
 
 				dist_cos = torch.nn.functional.cosine_similarity(enroll_emb_repeated, test_emb)
 				
-				for l in range(dist_e2e.size(0)):
+				for l in range(cos.size(0)):
 
 					if i==(j+l): continue ## skip same example
 
