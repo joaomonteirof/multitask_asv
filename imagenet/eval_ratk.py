@@ -26,6 +26,7 @@ if __name__ == '__main__':
 	parser.add_argument('--k-list', nargs='+', required=True, help='List of k values for R@K computation')
 	parser.add_argument('--stats', choices=['cars', 'cub', 'sop', 'imagenet'], default='imagenet')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
+	parser.add_argument('--pretrained', action='store_true', default=False, help='Get pretrained weights on imagenet. Encoder only')
 	args = parser.parse_args()
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 	if type(args.k_list[0]) is str:
@@ -55,14 +56,21 @@ if __name__ == '__main__':
 	elif args.model == 'DenseNet121':
 		model = densenet.DenseNet121()
 
-	ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
-	try:
-		model.load_state_dict(ckpt['model_state'], strict=True)
-	except RuntimeError as err:
-		print("Runtime Error: {0}".format(err))
-	except:
-		print("Unexpected error:", sys.exc_info()[0])
-		raise
+	if args.pretrained:
+		print('\nLoading pretrained encoder from torchvision\n')
+		if args.model == 'vgg':
+			model_pretrained = torchvision.models.vgg19(pretrained=True)
+		elif args.model == 'resnet':
+			model_pretrained = torchvision.models.resnet50(pretrained=True)
+		elif args.model == 'densenet':
+			model_pretrained = torchvision.models.densenet121(pretrained=True)
+
+		model.load_state_dict(model_pretrained.state_dict(), strict=False)
+
+	else:
+		print('\nLoading pretrained model from {}\n'.format(args.cp_path))
+		ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
+		model.load_state_dict(model_pretrained.state_dict(), strict=False)
 
 	if args.cuda:
 		device = get_freer_gpu()
