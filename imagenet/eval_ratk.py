@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
 			enroll_emb = embeddings[i].unsqueeze(0).to(device)
 
-			cos_scores = []
+			cos_scores = torch.zeros(len(labels))
 
 			for j in range(0, len(labels), args.batch_size):
 
@@ -140,9 +140,10 @@ if __name__ == '__main__':
 
 					if i==(j+l): continue ## skip same example
 
-					cos_scores.append( [dist_cos[l].item(), labels[j+l]] )
+					cos_scores[j+l] = dist_cos[l].item()
 
-			sorted_cos_classes = np.array(sorted(cos_scores, reverse=True))[:,1]
+			_, topk_cos_idx = torch.topk(torch.Tensor(cos_scores), max(args.k_list)+1)
+			sorted_cos_classes = labels[topk_cos_idx]
 
 			for k in args.k_list:
 				if label in sorted_cos_classes[:k]:
