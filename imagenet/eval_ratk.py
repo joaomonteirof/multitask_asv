@@ -153,7 +153,7 @@ if __name__ == '__main__':
 	print('\nScoring done')
 
 for k in args.k_list:
-	r_at_k_cos['R@'+str(k)]/=(len(labels)-1)
+	r_at_k_cos['R@'+str(k)]/=len(labels)
 
 print('\nCOS R@k:')
 print(r_at_k_cos)
