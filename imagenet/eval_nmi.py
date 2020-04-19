@@ -1,36 +1,32 @@
 from __future__ import print_function
 import argparse
 import torch
-import torchvision
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
 from models import vgg, resnet, densenet
 import numpy as np
 import os
 import sys
 from tqdm import tqdm
 from utils import *
-from sklearn.metrics import pairwise_distances
+from sklearn.metrics.cluster import normalized_mutual_info_score
+
 
 if __name__ == '__main__':
 
 
-	parser = argparse.ArgumentParser(description='Retrieval Evaluation')
+	parser = argparse.ArgumentParser(description='Clustering Evaluation')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for checkpointing')
 	parser.add_argument('--data-path', type=str, default='./data/', metavar='Path', help='Path to data')
 	parser.add_argument('--out-path', type=str, default=None, metavar='Path', help='Path to output embeddings.')
 	parser.add_argument('--emb-path', type=str, default=None, metavar='Path', help='Path to precomputed embedding.')
+	parser.add_argument('--model', choices=['vgg', 'resnet', 'densenet'], default='resnet')
 	parser.add_argument('--batch-size', type=int, default=64, metavar='N', help='input batch size for training (default: 64)')
 	parser.add_argument('--n-workers', type=int, default=4, metavar='N', help='Workers for data loading. Default is 4')
-	parser.add_argument('--model', choices=['vgg', 'resnet', 'densenet'], default='resnet')
-	parser.add_argument('--k-list', nargs='+', required=True, help='List of k values for R@K computation')
 	parser.add_argument('--stats', choices=['cars', 'cub', 'sop', 'imagenet'], default='imagenet')
-	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 	parser.add_argument('--pretrained', action='store_true', default=False, help='Get pretrained weights on imagenet. Encoder only')
+	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
 	args = parser.parse_args()
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
-	if type(args.k_list[0]) is str:
-		args.k_list = [int(x) for x in args.k_list[0].split(',')]
 
 	print(args)
 
@@ -47,7 +43,8 @@ if __name__ == '__main__':
 	validset = datasets.ImageFolder(args.data_path, transform=transform_test)
 	valid_loader = torch.utils.data.DataLoader(validset, batch_size=args.batch_size, shuffle=False, num_workers=args.n_workers)
 
-	r_at_k_cos = {'R@'+str(x):0 for x in args.k_list}
+	labels_list = [x[1] for x in validset]
+	pred_list = []
 
 	if args.model == 'vgg':
 		model = vgg.VGG('VGG19')
@@ -77,6 +74,13 @@ if __name__ == '__main__':
 		model = model.cuda(device)
 	else:
 		device = torch.device('cpu')
+
+
+	class_center = {}
+	class_count = {}
+
+	model.classifier = model.classifier[:-1]
+	model.eval()
 
 	if args.emb_path:
 
@@ -109,7 +113,7 @@ if __name__ == '__main__':
 				labels.append(y)
 
 		embeddings = torch.cat(embeddings, 0)
-		labels = torch.cat(labels, 0)
+		labels = list(torch.cat(labels, 0).squeeze().numpy())
 
 		if args.out_path:
 			if os.path.isfile(args.out_path):
@@ -119,41 +123,35 @@ if __name__ == '__main__':
 
 		print('\nEmbedding done')
 
+
+
 	with torch.no_grad():
 
 		iterator = tqdm(enumerate(labels), total=len(labels))
 		for i, label in iterator:
 
-			enroll_emb = embeddings[i].unsqueeze(0).to(device)
+			example = str(i)
 
-			cos_scores = torch.zeros(len(labels))
+			emb = embeddings[i].unsqueeze(0).to(device)
 
-			for j in range(0, len(labels), args.batch_size):
+			try:
+				class_center[label] += emb
+				class_count[label] += 1
+			except KeyError:
+				class_center[label] = emb
+				class_count[label] = 1
 
-				test_emb = embeddings[j:(min(j+args.batch_size, len(embeddings))),:].to(device)
-				enroll_emb_repeated = enroll_emb.repeat(test_emb.size(0), 1)
+		for k in class_center:
+			class_center[k] /= class_count[k]
 
-				dist_cos = torch.nn.functional.cosine_similarity(enroll_emb_repeated, test_emb)
-				
-				for l in range(dist_cos.size(0)):
+		for i, label in enumerate(labels_list):
+			class_scores = []
+			emb = embeddings[i].unsqueeze(0).to(device)
+			for k in class_center:
+				class_scores.append( [torch.nn.functional.cosine_similarity(class_center[k], emb).squeeze().item(), k] )
 
-					if i==(j+l): continue ## skip same example
-
-					cos_scores[j+l] = dist_cos[l].item()
-
-			_, topk_cos_idx = torch.topk(torch.Tensor(cos_scores), max(args.k_list)+1)
-			sorted_cos_classes = labels[topk_cos_idx]
-
-			for k in args.k_list:
-				if label in sorted_cos_classes[:k]:
-					r_at_k_cos['R@'+str(k)]+=1
-
+			pred_list.append(max(class_scores)[1])
 
 	print('\nScoring done')
 
-for k in args.k_list:
-	r_at_k_cos['R@'+str(k)]/=len(labels)
-
-print('\nCOS R@k:')
-print(r_at_k_cos)
-print('\n')
+	print('\n NMI: {}'.format(normalized_mutual_info_score(labels_list, pred_list)))
