@@ -32,7 +32,7 @@ parser.add_argument('--logdir', type=str, default=None, metavar='Path', help='Pa
 parser.add_argument('--pretrained-path', type=str, default=None, metavar='Path', help='Path for pre trained model')
 parser.add_argument('--train-hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
 parser.add_argument('--valid-hdf-file', type=str, default=None, metavar='Path', help='Path to hdf data')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
 parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -105,6 +105,8 @@ elif args.model == 'TDNN_aspp':
 	model = model_.TDNN_aspp(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'TDNN_mod':
 	model = model_.TDNN_mod(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
+elif args.model == 'TDNN_multipool':
+	model = model_.TDNN_multipool(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 elif args.model == 'transformer':
 	model = model_.transformer_enc(n_z=args.latent_size, proj_size=train_dataset.n_speakers if args.softmax!='none' or args.pretrain else 0, ncoef=args.ncoef, sm_type=args.softmax, delta=args.delta)
 

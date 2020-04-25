@@ -6,12 +6,14 @@ import torch.nn.init as init
 from utils.losses import AMSoftmax, Softmax
 
 class SelfAttention(nn.Module):
-	def __init__(self, hidden_size, n_heads=1):
+	def __init__(self, hidden_size, n_heads=1, mean_only=False):
 		super(SelfAttention, self).__init__()
 
 		#self.output_size = output_size
 		self.hidden_size = hidden_size
 		self.att_weights = nn.Conv1d(hidden_size, n_heads, kernel_size=1, stride=1, padding=0, bias=False)
+
+		self.mean_only = mean_only
 
 		init.kaiming_uniform_(self.att_weights.weight)
 
@@ -22,15 +24,18 @@ class SelfAttention(nn.Module):
 		attentions = F.softmax(torch.tanh(weights),dim=-1)
 		inputs = inputs.unsqueeze(1).repeat(1,attentions.size(1), 1, 1)
 		weighted = torch.mul(inputs, attentions.unsqueeze(2).expand_as(inputs))
-		noise = 1e-5*torch.randn(weighted.size())
 
-		if inputs.is_cuda:
-			noise = noise.cuda(inputs.get_device())
+		if self.mean_only:
+			return weighted.sum(-1).view(inputs.size(0), -1)
+		else:
+			noise = 1e-5*torch.randn(weighted.size())
 
-		avg_repr, std_repr = weighted.sum(-1).view(inputs.size(0), -1), (weighted+noise).std(-1).view(inputs.size(0), -1)
-		representations = torch.cat((avg_repr,std_repr),1)
+			noise = noise.to(inputs.device)
 
-		return representations
+			avg_repr, std_repr = weighted.sum(-1).view(inputs.size(0), -1), (weighted+noise).std(-1).view(inputs.size(0), -1)
+			representations = torch.cat((avg_repr,std_repr),1)
+
+			return representations
 
 class BasicBlock(nn.Module):
 	expansion = 1
@@ -950,6 +955,83 @@ class TDNN_aspp(nn.Module):
 		x = self.post_pooling_2(fc)
 
 		return x.squeeze(-1), fc.squeeze(-1)
+
+class TDNN_multipool(nn.Module):
+
+	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
+		super().__init__()
+
+		self.delta = delta
+
+		self.model_1 = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True) )
+		self.model_2 = nn.Sequential( nn.Conv1d(512, 512, 5, padding=2),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True) )
+		self.model_3 = nn.Sequential( nn.Conv1d(512, 512, 5, padding=3),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True) )
+		self.model_4 = nn.Sequential( nn.Conv1d(512, 512, 7),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True) )
+		self.model_5 = nn.Sequential( nn.Conv1d(512, 512, 1),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True) )
+
+		self.att_pooling = SelfAttention(1024, mean_only=True)
+
+		self.stats_pooling = StatisticalPooling()
+
+		self.post_pooling_1 = nn.Sequential(nn.Linear(1024, 512),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True) )
+
+		self.post_pooling_2 = nn.Sequential(nn.Linear(512, 512),
+			nn.BatchNorm1d(512),
+			nn.ReLU(inplace=True),
+			nn.Linear(512, n_z) )
+
+		if proj_size>0 and sm_type!='none':
+			if sm_type=='softmax':
+				self.out_proj=Softmax(input_features=n_z, output_features=proj_size)
+			elif sm_type=='am_softmax':
+				self.out_proj=AMSoftmax(input_features=n_z, output_features=proj_size)
+			else:
+				raise NotImplementedError
+
+	def forward(self, x):
+
+		x_pool = []
+
+		if self.delta:
+			x=x.view(x.size(0), x.size(1)*x.size(2), x.size(3))
+
+		x = x.squeeze(1)
+
+		x_1 = self.model_1(x)
+		x_pool.append(self.stats_pooling(x_1))
+
+		x_2 = self.model_2(x_1)
+		x_pool.append(self.stats_pooling(x_2))
+
+		x_3 = self.model_3(x_2)
+		x_pool.append(self.stats_pooling(x_3))
+
+		x_4 = self.model_4(x_3)
+		x_pool.append(self.stats_pooling(x_4))
+
+		x_5 = self.model_5(x_4)
+		x_pool.append(self.stats_pooling(x_5))
+
+		x_pool = torch.cat(x_pool, -1)
+
+		x = self.att_pooling(x_pool)
+
+		fc = self.post_pooling_1(x)
+		x = self.post_pooling_2(fc)
+
+		return x, fc
 
 class TDNN_mod(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):

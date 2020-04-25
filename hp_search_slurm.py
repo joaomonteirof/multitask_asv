@@ -52,7 +52,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False, help='Disab
 parser.add_argument('--slurm-sub-file', type=str, default='./run_hp.sh', metavar='Path', help='Path to sge submission file')
 parser.add_argument('--train-hdf-file', type=str, default='./data/train.hdf', metavar='Path', help='Path to hdf data')
 parser.add_argument('--valid-hdf-file', type=str, default=None, metavar='Path', help='Path to hdf data')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'transformer', 'all'], default='resnet_mfcc', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer', 'all'], default='resnet_mfcc', help='Model arch according to input type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -121,7 +121,7 @@ lambda_=instru.var.OrderedDiscrete([0.1, 0.15, 0.20, 0.25, 0.30, 0.4, 0.50])
 swap=instru.var.OrderedDiscrete([True, False])
 latent_size=instru.var.OrderedDiscrete([64, 128, 256, 512])
 n_frames=instru.var.OrderedDiscrete([300, 400, 500, 600, 800])
-model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'transformer']) if args.model=='all' else args.model
+model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer']) if args.model=='all' else args.model
 ncoef=args.ncoef
 epochs=args.epochs
 batch_size=args.batch_size

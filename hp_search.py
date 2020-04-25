@@ -35,7 +35,7 @@ parser.add_argument('--valid-batch-size', type=int, default=64, metavar='N', hel
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--budget', type=int, default=30, metavar='N', help='Maximum training runs')
 parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
-parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'transformer', 'all'], default='resnet_mfcc', help='Model arch according to input type')
+parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer', 'all'], default='resnet_mfcc', help='Model arch according to input type')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 parser.add_argument('--hp-workers', type=int, help='number of search workers', default=1)
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
@@ -97,6 +97,8 @@ def train(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_fra
 		model = model_.TDNN_aspp(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'TDNN_mod':
 		model = model_.TDNN_mod(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
+	elif args.model == 'TDNN_multipool':
+		model = model_.TDNN_multipool(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 	elif args.model == 'transformer':
 		model = model_.transformer_enc(n_z=int(latent_size), proj_size=train_dataset.n_speakers, ncoef=args.ncoef, sm_type=softmax, delta=delta)
 
@@ -120,7 +122,7 @@ lambda_=instru.var.OrderedDiscrete([0.1, 0.15, 0.20, 0.25, 0.30, 0.4, 0.50])
 swap=instru.var.OrderedDiscrete([True, False])
 latent_size=instru.var.OrderedDiscrete([64, 128, 256, 512])
 n_frames=instru.var.OrderedDiscrete([300, 400, 500, 600, 800])
-model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod']) if args.model=='all' else args.model
+model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer']) if args.model=='all' else args.model
 ncoef=args.ncoef
 epochs=args.epochs
 batch_size=args.batch_size
