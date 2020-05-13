@@ -964,32 +964,30 @@ class TDNN_multipool(nn.Module):
 		self.delta = delta
 
 		self.model_1 = nn.Sequential( nn.Conv1d(3*ncoef if delta else ncoef, 512, 5, padding=2),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True) )
+			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512) )
 		self.model_2 = nn.Sequential( nn.Conv1d(512, 512, 5, padding=2),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True) )
+			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512) )
 		self.model_3 = nn.Sequential( nn.Conv1d(512, 512, 5, padding=3),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True) )
+			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512) )
 		self.model_4 = nn.Sequential( nn.Conv1d(512, 512, 7),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True) )
+			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512) )
 		self.model_5 = nn.Sequential( nn.Conv1d(512, 512, 1),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True) )
-
-		self.att_pooling = SelfAttention(1024, mean_only=True)
+			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512) )
 
 		self.stats_pooling = StatisticalPooling()
 
-		self.post_pooling_1 = nn.Sequential(nn.Linear(1024, 512),
-			nn.BatchNorm1d(512),
-			nn.ReLU(inplace=True) )
+		self.post_pooling_1 = nn.Sequential(nn.Linear(2048, 512),
+			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512) )
 
 		self.post_pooling_2 = nn.Sequential(nn.Linear(512, 512),
-			nn.BatchNorm1d(512),
 			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512),
 			nn.Linear(512, n_z) )
 
 		if proj_size>0 and sm_type!='none':
@@ -1026,7 +1024,7 @@ class TDNN_multipool(nn.Module):
 
 		x_pool = torch.cat(x_pool, -1)
 
-		x = self.att_pooling(x_pool)
+		x = self.stats_pooling(x_pool)
 
 		fc = self.post_pooling_1(x)
 		x = self.post_pooling_2(fc)
