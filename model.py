@@ -1024,7 +1024,7 @@ class TDNN_multipool(nn.Module):
 
 		x_pool = torch.cat(x_pool, -1)
 
-		x = self.stats_pooling(x_pool)
+		x = self.stats_pooling(x_pool).squeeze(-1)
 
 		fc = self.post_pooling_1(x)
 		x = self.post_pooling_2(fc)
