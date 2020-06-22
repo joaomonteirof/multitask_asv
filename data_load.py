@@ -4,6 +4,62 @@ import torch
 from torch.utils.data import Dataset
 from librosa.feature import delta as delta_
 from utils.utils import strided_app
+import random
+
+def augment_spec(example):
+
+	with torch.no_grad():
+
+		if random.random()>0.5:
+			example = freq_mask(example, F=20, dim=1)
+		if random.random()>0.5:
+			example = freq_mask(example, F=50, dim=2)
+		if random.random()>0.5:
+			example += torch.randn_like(example)*random.choice([1e-1, 1e-2, 1e-3, 1e-4])
+
+	return example
+
+def freq_mask(spec, F=100, num_masks=1, replace_with_zero=False, dim=1):
+	"""Frequency masking
+
+	adapted from https://espnet.github.io/espnet/_modules/espnet/utils/spec_augment.html
+
+	:param torch.Tensor spec: input tensor with shape (T, dim)
+	:param int F: maximum width of each mask
+	:param int num_masks: number of masks
+	:param bool replace_with_zero: if True, masked parts will be filled with 0,
+		if False, filled with mean
+	:param int dim: 1 or 2 indicating to which axis the mask corresponds
+	"""
+
+	assert dim==1 or dim==2, 'Only 1 or 2 are valid values for dim!'
+
+	with torch.no_grad():
+
+		cloned = spec.clone()
+		num_bins = cloned.shape[dim]
+
+		for i in range(0, num_masks):
+			f = random.randrange(0, F)
+			f_zero = random.randrange(0, num_bins - f)
+
+			# avoids randrange error if values are equal and range is empty
+			if f_zero == f_zero + f:
+				return cloned
+
+			mask_end = random.randrange(f_zero, f_zero + f)
+			if replace_with_zero:
+				if dim==1:
+					cloned[:, f_zero:mask_end, :] = 0.0
+				elif dim==2:
+					cloned[:, :, f_zero:mask_end] = 0.0
+			else:
+				if dim==1:
+					cloned[:, f_zero:mask_end, :] = cloned.mean()
+				elif dim==2:
+					cloned[:, :, f_zero:mask_end] = cloned.mean()
+
+	return cloned
 
 class Loader(Dataset):
 
@@ -45,6 +101,8 @@ class Loader(Dataset):
 			mul = int(np.ceil(self.max_nb_frames/data.shape[-1]))
 			data_ = np.tile(data, (1, 1, mul))
 			data_ = data_[:, :, :self.max_nb_frames]
+
+		data_ = augment_spec(data_)
 
 		if self.delta:
 			data_ = np.concatenate([data_, delta_(data_,width=3,order=1), delta_(data_,width=3,order=2)], axis=0)
