@@ -133,8 +133,9 @@ if args.verbose >0:
 	print('\n')
 	print('Device: {}'.format(device))
 	print('\n')
-		for arg_key in args_dict:
-			print('{}: {}'.format(arg_key, args_dict[arg_key]))
+	args_dict = dict(vars(args))
+	for arg_key in args_dict:
+		print('{}: {}'.format(arg_key, args_dict[arg_key]))
 	print('\n')
 	print('Number of train speakers: {}'.format(train_dataset.n_speakers))
 	print('Number of train examples: {}'.format(len(train_dataset.utt_list)))
