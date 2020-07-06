@@ -29,7 +29,7 @@ class AMSoftmax(nn.Module):
 
 		if target is None:
 
-			logits = embeddings.mm(w_norm)
+			logits = embeddings.mm(self.w)
 
 		else:
 
