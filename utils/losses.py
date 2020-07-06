@@ -23,21 +23,27 @@ class AMSoftmax(nn.Module):
 	def init_parameters(self):
 		nn.init.kaiming_normal_(self.w)
 
-	def forward(self, embeddings, target):
+	def forward(self, embeddings, target=None):
 
 		self.w.to(embeddings.device)
 
-		w_norm = F.normalize(self.w, p=2, dim=0)
+		if target is None:
 
-		cos_theta = embeddings.mm(w_norm)
-		cos_theta = torch.clamp(cos_theta, -1.0, 1.0)
+			logits = embeddings.mm(w_norm)
 
-		phi_theta = cos_theta - self.m
+		else:
 
-		target_onehot = torch.zeros(embeddings.size(0), w_norm.size(1)).to(embeddings.device)
-		target_onehot.scatter_(1, target.view(-1,1), 1)
+			w_norm = F.normalize(self.w, p=2, dim=0)
 
-		logits = self.s*torch.where(target_onehot==1, phi_theta, cos_theta)
+			cos_theta = embeddings.mm(w_norm)
+			cos_theta = torch.clamp(cos_theta, -1.0, 1.0)
+
+			phi_theta = cos_theta - self.m
+
+			target_onehot = torch.zeros(embeddings.size(0), w_norm.size(1)).to(embeddings.device)
+			target_onehot.scatter_(1, target.view(-1,1), 1)
+
+			logits = self.s*torch.where(target_onehot==1, phi_theta, cos_theta)
 
 		return logits
 
