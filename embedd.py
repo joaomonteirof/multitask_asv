@@ -27,7 +27,6 @@ def prep_feats(data_, max_dur, max_nchunks, delta=False):
 		sliced_data = []
 		idxs = strided_app(np.arange(features.shape[-1]), max_dur, max_dur//2)
 		for idx in idxs:
-			print(idx)
 			sliced_data.append(features[...,idx])
 
 		features = np.concatenate(sliced_data, axis=0)
