@@ -56,7 +56,7 @@ else:
 
 if args.logdir:
 	from torch.utils.tensorboard import SummaryWriter
-	writer = SummaryWriter(log_dir=args.logdir+args.cp_name, comment=args.model, purge_step=True)
+	writer = SummaryWriter(log_dir=args.logdir+args.cp_name, comment=args.model, purge_step=0)
 else:
 	writer = None
 
