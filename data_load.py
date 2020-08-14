@@ -16,6 +16,8 @@ def augment_spec(example):
 			example = freq_mask(example, F=300, dim=2)
 		if random.random()>0.5:
 			example += torch.randn_like(example)*random.choice([1e-1, 1e-2])
+		if random.random()>0.8:
+			example = torch.flip(example, -1)
 
 	return example
 
