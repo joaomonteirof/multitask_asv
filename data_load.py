@@ -17,7 +17,7 @@ def augment_spec(example):
 		if random.random()>0.5:
 			example += torch.randn_like(example)*random.choice([1e-1, 1e-2])
 		if random.random()>0.8:
-			example = torch.flip(example, dims=(-1))
+			example = torch.flip(example, dims=[-1])
 
 	return example
 
