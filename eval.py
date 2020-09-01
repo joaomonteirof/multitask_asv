@@ -10,6 +10,7 @@ import glob
 import pickle
 import os
 import sys
+import pathlib
 from utils.utils import *
 from librosa.feature import delta as delta_
 
@@ -50,6 +51,8 @@ if __name__ == '__main__':
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 
 	print('\n', args, '\n')
+
+	pathlib.Path(args.out_path).mkdir(parents=True, exist_ok=True)
 
 	if args.read_scores:
 
