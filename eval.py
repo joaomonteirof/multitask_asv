@@ -32,7 +32,6 @@ def prep_feats(data_, delta=False):
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Evaluation')
-	parser.add_argument('--enroll-data', type=str, default='./data/enroll/', metavar='Path', help='Path to input data')
 	parser.add_argument('--test-data', type=str, default='./data/test/', metavar='Path', help='Path to input data')
 	parser.add_argument('--trials-path', type=str, default='./data/trials', metavar='Path', help='Path to trials file')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
@@ -49,6 +48,8 @@ if __name__ == '__main__':
 	parser.add_argument('--eval', action='store_true', default=False, help='Eval trials - Does not compute perf metrics')
 	args = parser.parse_args()
 	args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
+
+	print('\n', args, '\n')
 
 	if args.read_scores:
 
@@ -118,21 +119,6 @@ if __name__ == '__main__':
 		if args.cuda:
 			model = model.to(device)
 
-		enroll_data = None
-
-		files_list = glob.glob(args.enroll_data+'*.scp')
-
-		for file_ in files_list:
-			if enroll_data is None:
-				enroll_data = { k:v for k,v in read_mat_scp(file_) }
-			else:
-				for k,v in read_mat_scp(file_):
-					enroll_data[k] = v
-
-		files_list = glob.glob(args.test_data+'*.scp')
-
-		test_data = None
-
 		for file_ in files_list:
 			if test_data is None:
 				test_data = { k:v for k,v in read_mat_scp(file_) }
@@ -158,7 +144,7 @@ if __name__ == '__main__':
 					emb_enroll = mem_embeddings[enroll_utt]
 				except KeyError:
 
-					enroll_utt_data = prep_feats(enroll_data[enroll_utt], args.delta)
+					enroll_utt_data = prep_feats(test_data[enroll_utt], args.delta)
 
 					if args.cuda:
 						enroll_utt_data = enroll_utt_data.to(device)
