@@ -12,7 +12,7 @@ from utils.utils import compute_eer
 
 class TrainLoop(object):
 
-	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, label_smoothing, warmup_its, max_gnorm=10.0, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, softmax=False, pretrain=False, mining=False, cuda=True, logger=None):
+	def __init__(self, model, optimizer, train_loader, valid_loader, margin, lambda_, label_smoothing, warmup_its, max_gnorm=10.0, verbose=-1, device=0, cp_name=None, save_cp=False, checkpoint_path=None, checkpoint_epoch=None, swap=False, lr_red_epoch=100, lr_factor=0.1, softmax=False, pretrain=False, mining=False, cuda=True, logger=None):
 		if checkpoint_path is None:
 			# Save to current directory
 			self.checkpoint_path = os.getcwd()
@@ -30,6 +30,8 @@ class TrainLoop(object):
 		self.swap = swap
 		self.lambda_ = lambda_
 		self.optimizer = optimizer
+		self.lr_red_epoch = lr_red_epoch
+		self.lr_factor = lr_factor
 		self.max_gnorm = max_gnorm
 		self.train_loader = train_loader
 		self.valid_loader = valid_loader
@@ -43,6 +45,8 @@ class TrainLoop(object):
 		self.device = device
 		self.history = {'train_loss': [], 'train_loss_batch': []}
 		self.logger = logger
+		self.base_lr = self.optimizer.optimizer.param_groups[0]['lr']
+		self.updated_lr = False
 
 		its_per_epoch = len(train_loader.dataset)//(train_loader.batch_size) + 1 if len(train_loader.dataset)%(train_loader.batch_size)>0 else len(train_loader.dataset)//(train_loader.batch_size)
 
@@ -68,6 +72,9 @@ class TrainLoop(object):
 
 			np.random.seed()
 			self.train_loader.dataset.update_lists()
+			if self.cur_epoch>=self.lr_red_epoch and not self.updated_lr:
+				self.optimizer.init_lr = self.base_lr*self.lr_factor
+				self.updated_lr = True
 
 			if self.verbose>0:
 				print(' ')

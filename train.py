@@ -41,6 +41,8 @@ parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number o
 parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 parser.add_argument('--n-frames', type=int, default=800, metavar='N', help='maximum number of frames per utterance (default: 800)')
 parser.add_argument('--warmup', type=int, default=500, metavar='N', help='Iterations until reach lr (default: 500)')
+parser.add_argument('--lr-reduction-epoch', type=int, default=50, metavar='N', help='Iterations until reduce base lr by lr-factor (default: 50)')
+parser.add_argument('--lr-factor', type=float, default=0.1, metavar='m', help='Factor to reduce base lr. Should be in (0,1] (default: 0.1)')
 parser.add_argument('--smoothing', type=float, default=0.2, metavar='l', help='Label smoothing (default: 0.2)')
 parser.add_argument('--softmax', choices=['none', 'softmax', 'am_softmax'], default='none', help='Softmax type')
 parser.add_argument('--pretrain', action='store_true', default=False, help='Adds softmax layer for speaker identification and train exclusively with CE minimization')
@@ -125,7 +127,11 @@ if args.logdir:
 else:
 	writer = None
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, max_gnorm=args.max_gnorm, margin=args.margin, lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=args.verbose, device=device, save_cp=(not args.no_cp), checkpoint_path=args.checkpoint_path, checkpoint_epoch=args.checkpoint_epoch, swap=args.swap, softmax=args.softmax, pretrain=args.pretrain, mining=args.mine_triplets, cuda=args.cuda, logger=writer)
+trainer = TrainLoop(model, optimizer, train_loader, valid_loader, max_gnorm=args.max_gnorm, margin=args.margin, 
+	lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=args.verbose, device=device, 
+	save_cp=(not args.no_cp), checkpoint_path=args.checkpoint_path, checkpoint_epoch=args.checkpoint_epoch, swap=args.swap, 
+	lr_red_epoch=args.lr_reduction_epoch, lr_factor=args.lr_factor, softmax=args.softmax, pretrain=args.pretrain, 
+	mining=args.mine_triplets, cuda=args.cuda, logger=writer)
 
 if args.verbose >0:
 	print('\n')
