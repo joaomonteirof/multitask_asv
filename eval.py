@@ -150,12 +150,13 @@ if __name__ == '__main__':
 					if args.cuda:
 						unlab_utt_data = unlab_utt_data.to(device)
 
-					u_emb = model.forward(unlab_utt_data)
+					with torch.no_grad():
+						u_emb = model.forward(unlab_utt_data)
 
-					unlab_emb.append(u_emb[1].detach() if args.inner else u_emb[0].detach())
+					unlab_emb.append(u_emb[1].detach().cpu() if args.inner else u_emb[0].detach().cpu())
 
 
-			unlab_emb=torch.cat(unlab_emb, 0).mean(0, keepdim=True)
+			unlab_emb=torch.cat(unlab_emb, 0).mean(0, keepdim=True).to(device)
 
 		utterances_enroll, utterances_test, labels = read_trials(args.trials_path)
 
