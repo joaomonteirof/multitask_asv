@@ -35,6 +35,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Evaluation')
 	parser.add_argument('--test-data', type=str, default='./data/test/', metavar='Path', help='Path to input data')
 	parser.add_argument('--trials-path', type=str, default='./data/trials', metavar='Path', help='Path to trials file')
+	parser.add_argument('--unlab-data', type=str, default=None, metavar='Path', help='Path to unlabeled data for centering')
 	parser.add_argument('--cp-path', type=str, default=None, metavar='Path', help='Path for file containing model')
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
@@ -132,6 +133,30 @@ if __name__ == '__main__':
 				for k,v in read_mat_scp(file_):
 					test_data[k] = v
 
+		unlab_emb = None
+
+		if args.unlab_data:
+
+			files_list = glob.glob(args.unlab_data+'*.scp')
+
+			unlab_emb = []
+
+			for file_ in files_list:
+
+				for k,v in read_mat_scp(file_):
+
+					unlab_utt_data = prep_feats(v, args.delta)
+
+					if args.cuda:
+						unlab_utt_data = unlab_utt_data.to(device)
+
+					u_emb = model.forward(unlab_utt_data)
+
+					unlab_emb.append(u_emb[1].detach() if args.inner else u_emb[0].detach())
+
+
+			unlab_emb=torch.cat(unlab_emb, 0).mean(0, keepdim=True)
+
 		utterances_enroll, utterances_test, labels = read_trials(args.trials_path)
 
 		print('\nAll data ready. Start of scoring')
@@ -156,7 +181,8 @@ if __name__ == '__main__':
 						enroll_utt_data = enroll_utt_data.to(device)
 
 					emb_enroll = model.forward(enroll_utt_data)[1].detach() if args.inner else model.forward(enroll_utt_data)[0].detach()
-					emb_enroll = F.normalize(emb_enroll, p=2, dim=1)
+					if unlab_emb is not None:
+						emb_enroll -= unlab_emb
 					mem_embeddings[enroll_utt] = emb_enroll
 
 				test_utt = utterances_test[i]
@@ -172,7 +198,8 @@ if __name__ == '__main__':
 						test_utt_data = test_utt_data.to(device)
 
 					emb_test = model.forward(test_utt_data)[1].detach() if args.inner else model.forward(test_utt_data)[0].detach()
-					emb_test = F.normalize(emb_test, p=2, dim=1)
+					if unlab_emb is not None:
+						emb_test -= unlab_emb
 					mem_embeddings[test_utt] = emb_test
 
 				scores.append( torch.nn.functional.cosine_similarity(emb_enroll, emb_test).mean().item() )
