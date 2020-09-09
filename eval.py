@@ -145,10 +145,7 @@ if __name__ == '__main__':
 
 				for k,v in read_mat_scp(file_):
 
-					unlab_utt_data = prep_feats(v, args.delta)
-
-					if args.cuda:
-						unlab_utt_data = unlab_utt_data.to(device)
+					unlab_utt_data = prep_feats(v, args.delta).to(device)
 
 					with torch.no_grad():
 						u_emb = model.forward(unlab_utt_data)
@@ -176,10 +173,7 @@ if __name__ == '__main__':
 					emb_enroll = mem_embeddings[enroll_utt]
 				except KeyError:
 
-					enroll_utt_data = prep_feats(test_data[enroll_utt], args.delta)
-
-					if args.cuda:
-						enroll_utt_data = enroll_utt_data.to(device)
+					enroll_utt_data = prep_feats(test_data[enroll_utt], args.delta).to(device)
 
 					emb_enroll = model.forward(enroll_utt_data)[1].detach() if args.inner else model.forward(enroll_utt_data)[0].detach()
 					if unlab_emb is not None:
@@ -192,11 +186,7 @@ if __name__ == '__main__':
 					emb_test = mem_embeddings[test_utt]
 				except KeyError:
 
-					test_utt_data = prep_feats(test_data[test_utt], args.delta)
-
-					if args.cuda:
-						enroll_utt_data = enroll_utt_data.to(device)
-						test_utt_data = test_utt_data.to(device)
+					test_utt_data = prep_feats(test_data[test_utt], args.delta).to(device)
 
 					emb_test = model.forward(test_utt_data)[1].detach() if args.inner else model.forward(test_utt_data)[0].detach()
 					if unlab_emb is not None:

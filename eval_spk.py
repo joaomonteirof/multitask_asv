@@ -61,6 +61,8 @@ if __name__ == '__main__':
 		if args.model == 'resnet_qrnn':
 			import cupy
 			cupy.cuda.Device(int(str(device).split(':')[-1])).use()
+	else:
+		device = torch.device('cpu')
 
 	if args.model == 'resnet_mfcc':
 		model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
@@ -144,17 +146,14 @@ if __name__ == '__main__':
 
 			for k,v in read_mat_scp(file_):
 
-				unlab_utt_data = prep_feats(v, args.delta)
-
-				if args.cuda:
-					unlab_utt_data = unlab_utt_data.to(device)
+				unlab_utt_data = prep_feats(v, args.delta).to(device)
 
 				u_emb = model.forward(unlab_utt_data)
 
-				unlab_emb.append(u_emb[1].detach() if args.inner else u_emb[0].detach())
+				unlab_emb.append(u_emb[1].detach().cpu() if args.inner else u_emb[0].detach().cpu())
 
 
-		unlab_emb=torch.cat(unlab_emb, 0).mean(0, keepdim=True)
+		unlab_emb=torch.cat(unlab_emb, 0).mean(0, keepdim=True).to(device)
 
 	spk2utt = read_spk2utt(args.spk2utt)
 
@@ -183,10 +182,7 @@ if __name__ == '__main__':
 
 				for k, enroll_utt in enumerate(enroll_utts):
 
-					enroll_utt_data = prep_feats(enroll_data[enroll_utt], args.delta)
-
-					if args.cuda:
-						enroll_utt_data = enroll_utt_data.to(device)
+					enroll_utt_data = prep_feats(enroll_data[enroll_utt], args.delta).to(device)
 
 					new_emb_enroll = model.forward(enroll_utt_data)
 
@@ -214,11 +210,7 @@ if __name__ == '__main__':
 
 			except KeyError:
 
-				test_utt_data = prep_feats(test_data[test_utt], args.delta)
-
-				if args.cuda:
-					enroll_utt_data = enroll_utt_data.to(device)
-					test_utt_data = test_utt_data.to(device)
+				test_utt_data = prep_feats(test_data[test_utt], args.delta).to(device)
 
 				emb_test =  model.forward(test_utt_data)[1].detach() if args.inner else model.forward(test_utt_data)[0].detach()
 
