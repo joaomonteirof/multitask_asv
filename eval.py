@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
 		ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 
-		print(model.load_state_dict('\n', ckpt['model_state'], strict=False), '\n')
+		print('\n', model.load_state_dict(ckpt['model_state'], strict=False), '\n')
 
 		model.eval()
 		model = model.to(device)
