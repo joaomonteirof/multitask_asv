@@ -112,13 +112,7 @@ if __name__ == '__main__':
 
 		ckpt = torch.load(args.cp_path, map_location = lambda storage, loc: storage)
 
-		try:
-			model.load_state_dict(ckpt['model_state'], strict=True)
-		except RuntimeError as err:
-			print("Runtime Error: {0}".format(err))
-		except:
-			print("Unexpected error:", sys.exc_info()[0])
-			raise
+		print(model.load_state_dict('\n', ckpt['model_state'], strict=False), '\n')
 
 		model.eval()
 		model = model.to(device)
