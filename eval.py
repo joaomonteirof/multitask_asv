@@ -74,6 +74,8 @@ if __name__ == '__main__':
 			if args.model == 'resnet_qrnn':
 				import cupy
 				cupy.cuda.Device(int(str(device).split(':')[-1])).use()
+		else:
+			device = torch.device('cpu')
 
 		if args.model == 'resnet_mfcc':
 			model = model_.ResNet_mfcc(n_z=args.latent_size, proj_size=0, ncoef=args.ncoef, delta = args.delta)
@@ -119,9 +121,7 @@ if __name__ == '__main__':
 			raise
 
 		model.eval()
-
-		if args.cuda:
-			model = model.to(device)
+		model = model.to(device)
 
 		test_data = None
 		files_list = glob.glob(args.test_data+'*.scp')
