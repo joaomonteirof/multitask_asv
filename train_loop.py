@@ -73,6 +73,7 @@ class TrainLoop(object):
 			np.random.seed()
 			self.train_loader.dataset.update_lists()
 			if self.cur_epoch>=self.lr_red_epoch and not self.updated_lr:
+				print('\nReducing lr from {} to {}\n'.format(self.optimizer.init_lr, self.base_lr*self.lr_factor))
 				self.optimizer.init_lr = self.base_lr*self.lr_factor
 				self.updated_lr = True
 
