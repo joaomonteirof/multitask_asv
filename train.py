@@ -41,7 +41,7 @@ parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number o
 parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 parser.add_argument('--n-frames', type=int, default=800, metavar='N', help='maximum number of frames per utterance (default: 800)')
 parser.add_argument('--warmup', type=int, default=500, metavar='N', help='Iterations until reach lr (default: 500)')
-parser.add_argument('--lr-reduction-epoch', nargs='+', type=int, default=[50], help='List of epochs to reduce lr by lr-factor')
+parser.add_argument('--lr-reduction-epoch', nargs='+', default=[50], help='List of epochs to reduce lr by lr-factor')
 parser.add_argument('--lr-factor', type=float, default=0.1, metavar='m', help='Factor to reduce base lr. Should be in (0,1] (default: 0.1)')
 parser.add_argument('--smoothing', type=float, default=0.2, metavar='l', help='Label smoothing (default: 0.2)')
 parser.add_argument('--softmax', choices=['none', 'softmax', 'am_softmax'], default='none', help='Softmax type')
@@ -52,6 +52,7 @@ parser.add_argument('--no-cp', action='store_true', default=False, help='Disable
 parser.add_argument('--verbose', type=int, default=1, metavar='N', help='Verbose is activated if > 0')
 args = parser.parse_args()
 args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
+args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch[0].split(',')]
 args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
 torch.manual_seed(args.seed)
