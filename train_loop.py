@@ -371,7 +371,7 @@ class TrainLoop(object):
 				pass
 			else:
 				self.optimizer.init_lr = self.base_lr*self.lr_factor
-		else
+		else:
 			i = len(self.lr_red_epoch) - 1
 			while i >= 0 and self.lr_red_epoch[i] > self.cur_epoch:
 				i -= 1
