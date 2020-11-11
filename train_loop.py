@@ -46,7 +46,6 @@ class TrainLoop(object):
 		self.history = {'train_loss': [], 'train_loss_batch': []}
 		self.logger = logger
 		self.base_lr = self.optimizer.optimizer.param_groups[0]['lr']
-		self.updated_lr = False
 
 		its_per_epoch = len(train_loader.dataset)//(train_loader.batch_size) + 1 if len(train_loader.dataset)%(train_loader.batch_size)>0 else len(train_loader.dataset)//(train_loader.batch_size)
 
@@ -72,10 +71,7 @@ class TrainLoop(object):
 
 			np.random.seed()
 			self.train_loader.dataset.update_lists()
-			if self.cur_epoch>=self.lr_red_epoch and not self.updated_lr:
-				print('\nReducing lr from {} to {}\n'.format(self.optimizer.init_lr, self.base_lr*self.lr_factor))
-				self.optimizer.init_lr = self.base_lr*self.lr_factor
-				self.updated_lr = True
+			self.update_lr()
 
 			if self.verbose>0:
 				print(' ')
@@ -366,8 +362,18 @@ class TrainLoop(object):
 		else:
 			print('No checkpoint found at: {}'.format(ckpt))
 
-	def print_grad_norms(self):
-		norm = 0.0
-		for params in list(self.model.parameters()):
-			norm+=params.grad.norm(2).item()
-		print('Sum of grads norms: {}'.format(norm))
+	def update_lr(self):
+		pos = 0  ## Corresponds to the position where self.cur_epoch would be inserted in self.lr_red_epoch
+		if self.lr_red_epoch is None:
+			pass
+		elif len(self.lr_red_epoch)==1:
+			if self.cur_epoch<self.lr_red_epoch[-1]:
+				pass
+			else:
+				self.optimizer.init_lr = self.base_lr*self.lr_factor
+		else
+			i = len(self.lr_red_epoch) - 1
+			while i >= 0 and self.lr_red_epoch[i] > self.cur_epoch:
+				i -= 1
+			self.optimizer.init_lr = self.base_lr*(self.lr_factor**(i+1))
+
