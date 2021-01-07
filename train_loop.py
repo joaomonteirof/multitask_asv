@@ -56,7 +56,8 @@ class TrainLoop(object):
 				self.ce_criterion = torch.nn.CrossEntropyLoss()
 
 		if self.valid_loader is not None:
-			self.history['valid_loss'] = []
+			self.history['valid_loss_emb'] = []
+			self.history['valid_loss_out'] = []
 
 		if self.softmax:
 			self.history['softmax_batch']=[]
@@ -139,33 +140,40 @@ class TrainLoop(object):
 
 			if self.valid_loader is not None:
 
-				scores, labels, emb, y_ = None, None, None, None
+				emb_scores, out_scores, labels, emb, y_ = None, None, None, None
 
 				for t, batch in enumerate(self.valid_loader):
-					scores_batch, labels_batch, emb_batch, y_batch = self.valid(batch)
+					emb_scores_batch, out_scores_batch, labels_batch, emb_batch, y_batch = self.valid(batch)
 
 					try:
-						scores = np.concatenate([scores, scores_batch], 0)
+						emb_scores = np.concatenate([emb_scores, emb_scores_batch], 0)
+						out_scores = np.concatenate([out_scores, out_scores_batch], 0)
 						labels = np.concatenate([labels, labels_batch], 0)
 						emb = np.concatenate([emb, emb_batch], 0)
 						y_ = np.concatenate([y_, y_batch], 0)
 					except:
-						scores, labels, emb, y_ = scores_batch, labels_batch, emb_batch, y_batch
+						emb_scores, out_scores, labels, emb, y_ = emb_scores_batch, out_scores_batch, labels_batch, emb_batch, y_batch
 
-				self.history['valid_loss'].append(compute_eer(labels, scores))
+				self.history['valid_loss_emb'].append(compute_eer(labels, emb_scores))
+				self.history['valid_loss_out'].append(compute_eer(labels, out_scores))
 				if self.verbose>0:
-					print('Current validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss'][-1], np.min(self.history['valid_loss']), 1+np.argmin(self.history['valid_loss'])))
+					print('Current embedding-level validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss_emb'][-1], np.min(self.history['valid_loss_emb']), 1+np.argmin(self.history['valid_loss_emb'])))
+					print('Current output-level validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss_out'][-1], np.min(self.history['valid_loss_out']), 1+np.argmin(self.history['valid_loss_out'])))
 				if self.logger:
-					self.logger.add_scalar('Valid/EER', self.history['valid_loss'][-1], self.total_iters-1)
-					self.logger.add_scalar('Valid/Best EER', np.min(self.history['valid_loss']), self.total_iters-1)
-					self.logger.add_pr_curve('Valid. ROC', labels=labels, predictions=scores, global_step=self.total_iters-1)
+					self.logger.add_scalar('Valid/E-EER', self.history['valid_loss_emb'][-1], self.total_iters-1)
+					self.logger.add_scalar('Valid/Best E-EER', np.min(self.history['valid_loss_emb']), self.total_iters-1)
+					self.logger.add_pr_curve('Valid. E-ROC', labels=labels, predictions=emb_scores, global_step=self.total_iters-1)
+					self.logger.add_scalar('Valid/O-EER', self.history['valid_loss_out'][-1], self.total_iters-1)
+					self.logger.add_scalar('Valid/Best O-EER', np.min(self.history['valid_loss_out']), self.total_iters-1)
+					self.logger.add_pr_curve('Valid. O-ROC', labels=labels, predictions=out_scores, global_step=self.total_iters-1)
 
 					if emb.shape[0]>20000:
 						idxs = np.random.choice(np.arange(emb.shape[0]), size=20000, replace=False)
 						emb, y_ = emb[idxs, :], y_[idxs]
 
 					self.logger.add_histogram('Valid/Embeddings', values=emb, global_step=self.total_iters-1)
-					self.logger.add_histogram('Valid/Scores', values=scores, global_step=self.total_iters-1)
+					self.logger.add_histogram('Valid/E-Scores', values=emb_scores, global_step=self.total_iters-1)
+					self.logger.add_histogram('Valid/O-Scores', values=out_scores, global_step=self.total_iters-1)
 					self.logger.add_histogram('Valid/Labels', values=labels, global_step=self.total_iters-1)
 
 					if self.verbose>1:
@@ -176,7 +184,7 @@ class TrainLoop(object):
 
 			self.cur_epoch += 1
 
-			if self.valid_loader is not None and self.save_cp and (self.cur_epoch % save_every == 0 or self.history['valid_loss'][-1] < np.min([np.inf]+self.history['valid_loss'][:-1])):
+			if self.valid_loader is not None and self.save_cp and (self.cur_epoch % save_every == 0 or self.history['valid_loss_emb'][-1] < np.min([np.inf]+self.history['valid_loss_emb'][:-1])):
 					self.checkpointing()
 			elif self.save_cp and self.cur_epoch % save_every == 0:
 					self.checkpointing()
@@ -186,9 +194,10 @@ class TrainLoop(object):
 
 		if self.valid_loader is not None:
 			if self.verbose>0:
-				print('Best validation loss and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['valid_loss']), 1+np.argmin(self.history['valid_loss'])))
+				print('Best embedding-level validation loss and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['valid_loss_emb']), 1+np.argmin(self.history['valid_loss_emb'])))
+				print('Best output-level validation loss and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['valid_loss_out']), 1+np.argmin(self.history['valid_loss_out'])))
 
-			return np.min(self.history['valid_loss'])
+			return np.min(self.history['valid_loss_emb'])
 		else:
 			return np.min(self.history['train_loss'])
 
@@ -306,21 +315,35 @@ class TrainLoop(object):
 				y = y.to(self.device, non_blocking=True)
 
 			out, embeddings = self.model.forward(utterances)
+
+			out_norm = F.normalize(out, p=2, dim=1)
 			embeddings_norm = F.normalize(embeddings, p=2, dim=1)
 
-			triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
+			emb_triplets_idx = self.harvester_all.get_triplets(embeddings_norm.detach(), y)
+			out_triplets_idx = self.harvester_all.get_triplets(out_norm.detach(), y)
 
 			if self.cuda_mode:
-				triplets_idx = triplets_idx.cuda(self.device)
+				emb_triplets_idx = emb_triplets_idx.cuda(self.device)
+				out_triplets_idx = out_triplets_idx.cuda(self.device)
 
-			emb_a = torch.index_select(embeddings_norm, 0, triplets_idx[:, 0])
-			emb_p = torch.index_select(embeddings_norm, 0, triplets_idx[:, 1])
-			emb_n = torch.index_select(embeddings_norm, 0, triplets_idx[:, 2])
+			emb_a = torch.index_select(embeddings_norm, 0, emb_triplets_idx[:, 0])
+			emb_p = torch.index_select(embeddings_norm, 0, emb_triplets_idx[:, 1])
+			emb_n = torch.index_select(embeddings_norm, 0, emb_triplets_idx[:, 2])
 
-			scores_p = torch.nn.functional.cosine_similarity(emb_a, emb_p)
-			scores_n = torch.nn.functional.cosine_similarity(emb_a, emb_n)
+			out_a = torch.index_select(out_norm, 0, out_triplets_idx[:, 0])
+			out_p = torch.index_select(out_norm, 0, out_triplets_idx[:, 1])
+			out_n = torch.index_select(out_norm, 0, out_triplets_idx[:, 2])
 
-		return np.concatenate([scores_p.detach().cpu().numpy(), scores_n.detach().cpu().numpy()], 0), np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0), embeddings.detach().cpu().numpy(), y.detach().cpu().numpy()
+			emb_scores_p = torch.nn.functional.cosine_similarity(emb_a, emb_p)
+			emb_scores_n = torch.nn.functional.cosine_similarity(emb_a, emb_n)
+
+			out_scores_p = torch.nn.functional.cosine_similarity(out_a, out_p)
+			out_scores_n = torch.nn.functional.cosine_similarity(out_a, out_n)
+
+		return (np.concatenate([emb_scores_p.detach().cpu().numpy(), emb_scores_n.detach().cpu().numpy()], 0), 
+			np.concatenate([out_scores_p.detach().cpu().numpy(), out_scores_n.detach().cpu().numpy()], 0), 
+			np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0), 
+			embeddings.detach().cpu().numpy(), y.detach().cpu().numpy() )
 
 	def triplet_loss(self, emba, embp, embn, reduce_=True):
 
