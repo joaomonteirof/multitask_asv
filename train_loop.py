@@ -140,7 +140,7 @@ class TrainLoop(object):
 
 			if self.valid_loader is not None:
 
-				emb_scores, out_scores, labels, emb, y_ = None, None, None, None
+				emb_scores, out_scores, labels, emb, y_ = None, None, None, None, None
 
 				for t, batch in enumerate(self.valid_loader):
 					emb_scores_batch, out_scores_batch, labels_batch, emb_batch, y_batch = self.valid(batch)
