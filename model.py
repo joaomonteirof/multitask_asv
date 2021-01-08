@@ -965,15 +965,16 @@ class TDNN_multipool(nn.Module):
 		self.model_4 = nn.Sequential( nn.Conv1d(512, 512, 7, bias=True),
 			nn.ReLU(inplace=True),
 			nn.BatchNorm1d(512) )
-		self.model_5 = nn.Sequential( nn.Conv1d(512, 512, 1, bias=True) )
+		self.model_5 = nn.Sequential( nn.Conv1d(512, 512, 1, bias=True),
+			nn.ReLU(inplace=True),
+			nn.BatchNorm1d(512) )
 
 		self.stats_pooling = StatisticalPooling()
 
 		self.multihead_pooling = nn.TransformerEncoderLayer(d_model=1024, nhead=n_heads, dim_feedforward=512, dropout=0.1)
 
-		self.post_pooling_1 = nn.Linear(1024, 512, bias=True)
-
-		self.post_pooling_1_activation_BN = nn.Sequential(nn.ReLU(inplace=True),
+		self.post_pooling_1 = nn.Sequential(nn.Linear(1024, 512, bias=True),
+			nn.ReLU(inplace=True),
 			nn.BatchNorm1d(512) )
 
 		self.post_pooling_2 = nn.Sequential(nn.Linear(512, 512, bias=True),
@@ -1018,11 +1019,10 @@ class TDNN_multipool(nn.Module):
 		x_pool = self.multihead_pooling(x_pool)
 		x_pool = x_pool.permute(1,2,0).mean(-1)
 
-		fc_pre_activation = self.post_pooling_1(x_pool)
-		fc_post_activation = self.post_pooling_1_activation_BN(fc_pre_activation)
-		x = self.post_pooling_2(fc_post_activation)
+		fc = self.post_pooling_1(x_pool)
+		x = self.post_pooling_2(fc)
 
-		return x, fc_pre_activation
+		return x, fc
 
 class TDNN_mod(nn.Module):
 	def __init__(self, n_z=256, proj_size=0, ncoef=23, sm_type='none', delta=False):
