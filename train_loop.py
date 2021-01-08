@@ -342,7 +342,7 @@ class TrainLoop(object):
 
 		return (np.concatenate([emb_scores_p.detach().cpu().numpy(), emb_scores_n.detach().cpu().numpy()], 0), 
 			np.concatenate([out_scores_p.detach().cpu().numpy(), out_scores_n.detach().cpu().numpy()], 0), 
-			np.concatenate([np.ones(scores_p.size(0)), np.zeros(scores_n.size(0))], 0), 
+			np.concatenate([np.ones(emb_scores_p.size(0)), np.zeros(emb_scores_n.size(0))], 0), 
 			embeddings.detach().cpu().numpy(), y.detach().cpu().numpy() )
 
 	def triplet_loss(self, emba, embp, embn, reduce_=True):
