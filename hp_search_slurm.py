@@ -1,4 +1,3 @@
-from concurrent import futures
 import nevergrad as ng
 import argparse
 import subprocess
@@ -10,6 +9,7 @@ import glob
 import torch
 import os
 import shutil
+from concurrent import futures
 
 def get_file_name(dir_):
 

@@ -1,5 +1,6 @@
 from __future__ import print_function
 import argparse
+import numpy as np
 import torch
 from train_loop import TrainLoop
 import torch.optim as optim
