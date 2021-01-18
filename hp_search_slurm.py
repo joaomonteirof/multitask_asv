@@ -63,7 +63,9 @@ parser.add_argument('--logdir', type=str, default=None, metavar='Path', help='Pa
 args=parser.parse_args()
 args.cuda=True if not args.no_cuda else False
 
-def train(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_submission_file, tmp_dir, cp_path, softmax, delta, logdir):
+def train(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs,
+	batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_submission_file,
+	tmp_dir, cp_path, softmax, delta, logdir):
 
 	file_name = get_file_name(tmp_dir)
 	np.random.seed()
@@ -129,13 +131,12 @@ parametrization = ng.p.Instrumentation(lr=ng.p.Choice([2.0, 1.0, 0.1, 0.01]),
 	cuda=args.cuda,
 	train_hdf_file=args.train_hdf_file,
 	valid_hdf_file=args.valid_hdf_file,
-	slurm_sub_file=args.slurm_sub_file,
-	checkpoint_path=args.checkpoint_path,
+	slurm_submission_file=args.slurm_sub_file,
+	tmp_dir=os.getcwd() + '/' + args.temp_folder + '/',
+	cp_path=args.checkpoint_path,
 	softmax=ng.p.Choice(['softmax', 'am_softmax']),
 	delta=ng.p.Choice([True, False]),
 	logdir=args.logdir)
-
-tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 
 if not os.path.isdir(tmp_dir):
 	os.mkdir(tmp_dir)
