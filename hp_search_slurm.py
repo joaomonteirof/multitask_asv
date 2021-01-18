@@ -1,6 +1,5 @@
 from concurrent import futures
-import nevergrad.optimization as optimization
-from nevergrad import instrumentation as instru
+import nevergrad as ng
 import argparse
 import subprocess
 import shlex
@@ -112,29 +111,29 @@ def train(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_fra
 
 	return 0.5
 
-lr=instru.var.OrderedDiscrete([2.0, 1.0, 0.1, 0.01])
-l2=instru.var.OrderedDiscrete([0.001, 0.0005, 0.0001, 0.00005, 0.00001])
-max_gnorm=instru.var.OrderedDiscrete([10.0, 30.0, 100.0, 1000.0])
-momentum=instru.var.OrderedDiscrete([0.1, 0.3, 0.5, 0.7, 0.9])
-margin=instru.var.OrderedDiscrete([0.1, 0.01, 0.001, 0.0001, 0.00001])
-lambda_=instru.var.OrderedDiscrete([0.0, 0.0001, 0.001, 0.01, 0.1])
-swap=instru.var.OrderedDiscrete([True, False])
-latent_size=instru.var.OrderedDiscrete([64, 128, 256, 512])
-n_frames=instru.var.OrderedDiscrete([300, 400, 600, 800])
-model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer']) if args.model=='all' else args.model
-ncoef=args.ncoef
-epochs=args.epochs
-batch_size=args.batch_size
-valid_batch_size=args.valid_batch_size
-n_workers=args.workers
-cuda=args.cuda
-train_hdf_file=args.train_hdf_file
-valid_hdf_file=args.valid_hdf_file
-slurm_sub_file=args.slurm_sub_file
-checkpoint_path=args.checkpoint_path
-softmax=instru.var.OrderedDiscrete(['softmax', 'am_softmax'])
-delta=instru.var.OrderedDiscrete([True, False])
-logdir=args.logdir
+parametrization = ng.p.Instrumentation(lr=ng.p.Choice([2.0, 1.0, 0.1, 0.01]),
+	l2=ng.p.Choice([0.001, 0.0005, 0.0001, 0.00005, 0.00001]),
+	max_gnorm=ng.p.Choice([10.0, 30.0, 100.0, 1000.0]),
+	momentum=ng.p.Choice([0.1, 0.3, 0.5, 0.7, 0.9]),
+	margin=ng.p.Choice([0.1, 0.01, 0.001, 0.0001, 0.00001]),
+	lambda_=ng.p.Choice([0.0, 0.0001, 0.001, 0.01, 0.1]),
+	swap=ng.p.Choice([True, False]),
+	latent_size=ng.p.Choice([64, 128, 256, 512]),
+	n_frames=ng.p.Choice([300, 400, 600, 800]),
+	model=ng.p.Choice(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer']) if args.model=='all' else args.model,
+	ncoef=args.ncoef,
+	epochs=args.epochs,
+	batch_size=args.batch_size,
+	valid_batch_size=args.valid_batch_size,
+	n_workers=args.workers,
+	cuda=args.cuda,
+	train_hdf_file=args.train_hdf_file,
+	valid_hdf_file=args.valid_hdf_file,
+	slurm_sub_file=args.slurm_sub_file,
+	checkpoint_path=args.checkpoint_path,
+	softmax=ng.p.Choice(['softmax', 'am_softmax']),
+	delta=ng.p.Choice([True, False]),
+	logdir=args.logdir)
 
 tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 
@@ -143,9 +142,9 @@ if not os.path.isdir(tmp_dir):
 
 instrum=instru.Instrumentation(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_sub_file, tmp_dir, checkpoint_path, softmax, delta, logdir)
 
-hp_optimizer=optimization.optimizerlib.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
+hp_optimizer=ng.optimizers.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
 
 with futures.ThreadPoolExecutor(max_workers=args.hp_workers) as executor:
-	print(hp_optimizer.optimize(train, executor=executor, verbosity=2))
+	print(hp_optimizer.minimize(train, executor=executor, verbosity=2))
 
 shutil.rmtree(tmp_dir)
