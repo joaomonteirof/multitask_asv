@@ -140,9 +140,7 @@ tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
 if not os.path.isdir(tmp_dir):
 	os.mkdir(tmp_dir)
 
-instrum=instru.Instrumentation(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_frames, model, ncoef, epochs, batch_size, valid_batch_size, n_workers, cuda, train_hdf_file, valid_hdf_file, slurm_sub_file, tmp_dir, checkpoint_path, softmax, delta, logdir)
-
-hp_optimizer=ng.optimizers.RandomSearch(instrumentation=instrum, budget=args.budget, num_workers=args.hp_workers)
+hp_optimizer=ng.optimizers.RandomSearch(parametrization=parametrization, budget=args.budget, num_workers=args.hp_workers)
 
 with futures.ThreadPoolExecutor(max_workers=args.hp_workers) as executor:
 	print(hp_optimizer.minimize(train, executor=executor, verbosity=2))
