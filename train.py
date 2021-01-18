@@ -6,7 +6,6 @@ from train_loop import TrainLoop
 import torch.optim as optim
 import torch.utils.data
 import model as model_
-import numpy as np
 from data_load import Loader, Loader_valid
 import os
 import sys
