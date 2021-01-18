@@ -112,15 +112,15 @@ def train(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_fra
 
 	return 0.5
 
-lr=instru.var.OrderedDiscrete([0.1, 0.01, 0.001, 0.0001, 0.00001])
+lr=instru.var.OrderedDiscrete([2.0, 1.0, 0.1, 0.01])
 l2=instru.var.OrderedDiscrete([0.001, 0.0005, 0.0001, 0.00005, 0.00001])
-max_gnorm=instru.var.OrderedDiscrete([10.0, 100.0, 1000.0])
+max_gnorm=instru.var.OrderedDiscrete([10.0, 30.0, 100.0, 1000.0])
 momentum=instru.var.OrderedDiscrete([0.1, 0.3, 0.5, 0.7, 0.9])
 margin=instru.var.OrderedDiscrete([0.1, 0.01, 0.001, 0.0001, 0.00001])
-lambda_=instru.var.OrderedDiscrete([0.1, 0.15, 0.20, 0.25, 0.30, 0.4, 0.50])
+lambda_=instru.var.OrderedDiscrete([0.0, 0.0001, 0.001, 0.01, 0.1])
 swap=instru.var.OrderedDiscrete([True, False])
 latent_size=instru.var.OrderedDiscrete([64, 128, 256, 512])
-n_frames=instru.var.OrderedDiscrete([300, 400, 500, 600, 800])
+n_frames=instru.var.OrderedDiscrete([300, 400, 600, 800])
 model=instru.var.OrderedDiscrete(['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer']) if args.model=='all' else args.model
 ncoef=args.ncoef
 epochs=args.epochs

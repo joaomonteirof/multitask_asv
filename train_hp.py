@@ -11,6 +11,7 @@ import os
 import sys
 import pickle
 from utils.utils import *
+from utils.optimizer import TransformerOptimizer
 
 # Training settings
 parser = argparse.ArgumentParser(description='Train for hp search')
@@ -33,7 +34,9 @@ parser.add_argument('--valid-hdf-file', type=str, default=None, metavar='Path', 
 parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 parser.add_argument('--n-frames', type=int, default=800, metavar='N', help='maximum number of frames per utterance (default: 800)')
 parser.add_argument('--warmup', type=int, default=500, metavar='N', help='Iterations until reach lr (default: 500)')
-parser.add_argument('--smoothing', type=float, default=0.2, metavar='l', help='Label smoothing (default: 0.2)')
+parser.add_argument('--lr-reduction-epoch', type=str, default='10,25', help='List of epochs to reduce lr by lr-factor')
+parser.add_argument('--lr-factor', type=float, default=0.5, metavar='m', help='Factor to reduce base lr. Should be in (0,1] (default: 0.5)')
+parser.add_argument('--smoothing', type=float, default=0.0, metavar='l', help='Label smoothing (default: 0.0)')
 parser.add_argument('--cuda', type=str, default=None)
 parser.add_argument('--delta', type=str, default=None)
 parser.add_argument('--out-file', type=str, default='./eer.p')
@@ -45,6 +48,8 @@ args.cuda = True if args.cuda=='True' and torch.cuda.is_available() else False
 args.swap = True if args.swap=='True' else False
 args.delta = True if args.delta=='True' else False
 args.logdir = None if args.logdir=='None' else args.logdir
+args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch.split(',')]
+args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
 if args.cuda:
 	device = get_freer_gpu()
@@ -102,28 +107,28 @@ elif args.model == 'transformer':
 if args.cuda:
 	model = model.to(device)
 
-optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2)
+optimizer = TransformerOptimizer(optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.l2, nesterov=True), lr=args.lr, warmup_steps=args.warmup)
 
-trainer = TrainLoop(model, optimizer, train_loader, valid_loader, max_gnorm=args.max_gnorm, margin=args.margin, lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, softmax=True, pretrain=False, mining=True, cuda=args.cuda, logger=writer)
+trainer = TrainLoop(model, optimizer, train_loader, valid_loader, max_gnorm=args.max_gnorm, margin=args.margin, 
+	lambda_=args.lamb, label_smoothing=args.smoothing, warmup_its=args.warmup, verbose=-1, device=device, 
+	cp_name=args.cp_name, save_cp=True, checkpoint_path=args.checkpoint_path, swap=args.swap, 
+	lr_red_epoch=args.lr_reduction_epoch, lr_factor=args.lr_factor, softmax=True, pretrain=False, 
+	mining=True, cuda=args.cuda, logger=writer)
 
-print('CP name: {}'.format(args.cp_name))
-print('Cuda Mode: {}'.format(args.cuda))
-print('Softmax Mode: {}'.format(args.softmax))
-print('Selected model: {}'.format(args.model))
-print('Embeddings size: {}'.format(args.latent_size))
-print('Batch size: {}'.format(args.batch_size))
-print('LR: {}'.format(args.lr))
-print('momentum: {}'.format(args.momentum))
-print('l2: {}'.format(args.l2))
-print('Max. grad norm: {}'.format(args.max_gnorm))
-print('lambda: {}'.format(args.lamb))
-print('Margin: {}'.format(args.margin))
-print('Swap: {}'.format(args.swap))
-print('Warmup iterations: {}'.format(args.warmup))
-print('Label smoothing: {}'.format(args.smoothing))
-print('Delta features: {}'.format(args.delta))
-print('Max input length: {}'.format(args.n_frames))
-print('Number of CCs: {}'.format(args.ncoef))
+print('\n')
+print(model)
+print('\n')
+print('Device: {}'.format(device))
+print('\n')
+args_dict = dict(vars(args))
+for arg_key in args_dict:
+	print('{}: {}'.format(arg_key, args_dict[arg_key]))
+print('\n')
+print('Number of train speakers: {}'.format(train_dataset.n_speakers))
+print('Number of train examples: {}'.format(len(train_dataset.utt_list)))
+if args.valid_hdf_file is not None:
+	print('Number of valid speakers: {}'.format(valid_dataset.n_speakers))
+	print('Number of valid examples: {}'.format(len(valid_dataset.utt_list)))
 print(' ')
 
 best_eer = trainer.train(n_epochs=args.epochs, save_every=args.epochs+10)
