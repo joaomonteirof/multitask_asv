@@ -113,6 +113,11 @@ def train(lr, l2, max_gnorm, momentum, margin, lambda_, swap, latent_size, n_fra
 
 	return 0.5
 
+tmp_dir = os.getcwd() + '/' + args.temp_folder + '/'
+
+if not os.path.isdir(tmp_dir):
+	os.mkdir(tmp_dir)
+
 parametrization = ng.p.Instrumentation(lr=ng.p.Choice([2.0, 1.0, 0.1, 0.01]),
 	l2=ng.p.Choice([0.001, 0.0005, 0.0001, 0.00005, 0.00001]),
 	max_gnorm=ng.p.Choice([10.0, 30.0, 100.0, 1000.0]),
@@ -132,14 +137,11 @@ parametrization = ng.p.Instrumentation(lr=ng.p.Choice([2.0, 1.0, 0.1, 0.01]),
 	train_hdf_file=args.train_hdf_file,
 	valid_hdf_file=args.valid_hdf_file,
 	slurm_submission_file=args.slurm_sub_file,
-	tmp_dir=os.getcwd() + '/' + args.temp_folder + '/',
+	tmp_dir=tmp_dir,
 	cp_path=args.checkpoint_path,
 	softmax=ng.p.Choice(['softmax', 'am_softmax']),
 	delta=ng.p.Choice([True, False]),
 	logdir=args.logdir)
-
-if not os.path.isdir(tmp_dir):
-	os.mkdir(tmp_dir)
 
 hp_optimizer=ng.optimizers.RandomSearch(parametrization=parametrization, budget=args.budget, num_workers=args.hp_workers)
 
