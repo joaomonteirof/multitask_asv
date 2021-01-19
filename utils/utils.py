@@ -30,6 +30,14 @@ def strided_app(a, L, S):
 	n = a.strides[0]
 	return as_strided(a, shape=(nrows, L), strides=(S*n,n))
 
+def parse_args_for_log(args):
+	args_dict = dict(vars(args))
+	for arg_key in args_dict:
+		if args_dict[arg_key] is None:
+			args_dict[arg_key] = 'None'
+
+	return args_dict
+
 def compute_eer(y, y_score):
 	fpr, tpr, thresholds = metrics.roc_curve(y, y_score, pos_label=1)
 	fnr = 1 - tpr
