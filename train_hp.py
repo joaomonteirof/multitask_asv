@@ -48,10 +48,11 @@ args.cuda = True if args.cuda=='True' and torch.cuda.is_available() else False
 args.swap = True if args.swap=='True' else False
 args.delta = True if args.delta=='True' else False
 args.logdir = None if args.logdir=='None' else args.logdir
-args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch.split(',')]
-args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
 args_dict = parse_args_for_log(args)
+
+args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch.split(',')]
+args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
 if args.cuda:
 	device = get_freer_gpu()

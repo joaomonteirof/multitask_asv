@@ -52,10 +52,11 @@ parser.add_argument('--no-cp', action='store_true', default=False, help='Disable
 parser.add_argument('--verbose', type=int, default=1, metavar='N', help='Verbose is activated if > 0')
 args = parser.parse_args()
 args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
-args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch.split(',')]
-args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
 args_dict = parse_args_for_log(args)
+
+args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch.split(',')]
+args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
 torch.manual_seed(args.seed)
 if args.cuda:
