@@ -55,6 +55,8 @@ args.cuda = True if not args.no_cuda and torch.cuda.is_available() else False
 args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch.split(',')]
 args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
+args_dict = parse_args_for_log(args)
+
 torch.manual_seed(args.seed)
 if args.cuda:
 	torch.cuda.manual_seed(args.seed)
@@ -126,6 +128,7 @@ optimizer = TransformerOptimizer(optim.SGD(model.parameters(), lr=args.lr, momen
 
 if args.logdir:
 	writer = SummaryWriter(log_dir=args.logdir, comment=args.model, purge_step=0 if args.checkpoint_epoch is None else int(args.checkpoint_epoch*len(train_loader)))
+	writer.add_hparams(hparam_dict=args_dict, metric_dict={'best_eer':0.0})
 else:
 	writer = None
 
@@ -141,7 +144,6 @@ if args.verbose >0:
 	print('\n')
 	print('Device: {}'.format(device))
 	print('\n')
-	args_dict = dict(vars(args))
 	for arg_key in args_dict:
 		print('{}: {}'.format(arg_key, args_dict[arg_key]))
 	print('\n')
@@ -152,4 +154,7 @@ if args.verbose >0:
 		print('Number of valid examples: {}'.format(len(valid_dataset.utt_list)))
 	print(' ')
 
-trainer.train(n_epochs=args.epochs, save_every=args.save_every)
+best_eer = trainer.train(n_epochs=args.epochs, save_every=args.save_every)
+
+if args.logdir:
+	writer.add_hparams(hparam_dict=args_dict, metric_dict={'best_eer':best_eer})

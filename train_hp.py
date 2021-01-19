@@ -51,6 +51,8 @@ args.logdir = None if args.logdir=='None' else args.logdir
 args.lr_reduction_epoch = [int(x) for x in args.lr_reduction_epoch.split(',')]
 args.lr_reduction_epoch = sorted(args.lr_reduction_epoch)
 
+args_dict = parse_args_for_log(args)
+
 if args.cuda:
 	device = get_freer_gpu()
 	if args.model == 'resnet_qrnn':
@@ -62,6 +64,7 @@ else:
 if args.logdir:
 	from torch.utils.tensorboard import SummaryWriter
 	writer = SummaryWriter(log_dir=os.path.join(args.logdir, args.cp_name), comment=args.model, purge_step=0)
+	writer.add_hparams(hparam_dict=args_dict, metric_dict={'best_eer':0.0})
 else:
 	writer = None
 
@@ -120,7 +123,6 @@ print(model)
 print('\n')
 print('Device: {}'.format(device))
 print('\n')
-args_dict = dict(vars(args))
 for arg_key in args_dict:
 	print('{}: {}'.format(arg_key, args_dict[arg_key]))
 print('\n')
@@ -132,6 +134,9 @@ if args.valid_hdf_file is not None:
 print(' ')
 
 best_eer = trainer.train(n_epochs=args.epochs, save_every=args.epochs+10)
+
+if args.logdir:
+	writer.add_hparams(hparam_dict=args_dict, metric_dict={'best_eer':best_eer})
 
 out_file = open(args.out_file, 'wb')
 pickle.dump(best_eer, out_file)
