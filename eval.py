@@ -197,7 +197,7 @@ if __name__ == '__main__':
 					emb_test_outer, emb_test_inner = model.forward(test_utt_data)
 					emb_test_outer, emb_test_inner = emb_test_outer.detach(), emb_test_inner.detach()
 
-					if unlab_emb is not None:
+					if unlab_emb_inner is not None:
 						emb_test_inner -= unlab_emb_inner
 						emb_test_outer -= unlab_emb_outer
 
