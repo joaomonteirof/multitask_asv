@@ -127,13 +127,13 @@ if __name__ == '__main__':
 				for k,v in read_mat_scp(file_):
 					test_data[k] = v
 
-		unlab_emb = None
+		unlab_emb_outer, unlab_emb_inner = None, None
 
 		if args.unlab_data:
 
 			files_list = glob.glob(args.unlab_data+'*.scp')
 
-			unlab_emb = []
+			unlab_emb_outer, unlab_emb_inner = [], []
 
 			for file_ in files_list:
 
@@ -142,20 +142,26 @@ if __name__ == '__main__':
 					unlab_utt_data = prep_feats(v, args.delta).to(device)
 
 					with torch.no_grad():
-						u_emb = model.forward(unlab_utt_data)
+						u_emb_outer, u_emb_inner = model.forward(unlab_utt_data)
 
-					unlab_emb.append(u_emb[1].detach().cpu() if args.inner else u_emb[0].detach().cpu())
+					unlab_emb_outer.append(u_emb_outer.detach().cpu())
+					unlab_emb_inner.append(u_emb_inner.detach().cpu())
 
-
-			unlab_emb=torch.cat(unlab_emb, 0).mean(0, keepdim=True).to(device)
+			unlab_emb_outer = torch.cat(unlab_emb_outer, 0).mean(0, keepdim=True).to(device)
+			unlab_emb_inner = torch.cat(unlab_emb_inner, 0).mean(0, keepdim=True).to(device)
 
 		utterances_enroll, utterances_test, labels = read_trials(args.trials_path)
 
 		print('\nAll data ready. Start of scoring')
 
-		scores = []
-		out_cos = []
-		mem_embeddings = {}
+		scores = {}
+		out_cos = {}
+		for score_type in ['inner', 'outer', 'fus_emb', 'fus_score']:
+			scores[score_type] = []
+			out_cos[score_type] = []
+
+		mem_embeddings_inner = {}
+		mem_embeddings_outer = {}
 
 		with torch.no_grad():
 
@@ -164,41 +170,70 @@ if __name__ == '__main__':
 				enroll_utt = utterances_enroll[i]
 
 				try:
-					emb_enroll = mem_embeddings[enroll_utt]
+					emb_enroll_inner = mem_embeddings_inner[enroll_utt]
+					emb_enroll_outer = mem_embeddings_outer[enroll_utt]
 				except KeyError:
 
 					enroll_utt_data = prep_feats(test_data[enroll_utt], args.delta).to(device)
 
-					emb_enroll = model.forward(enroll_utt_data)[1].detach() if args.inner else model.forward(enroll_utt_data)[0].detach()
-					if unlab_emb is not None:
-						emb_enroll -= unlab_emb
-					mem_embeddings[enroll_utt] = emb_enroll
+					emb_enroll_outer, emb_enroll_inner = model.forward(enroll_utt_data)
+					emb_enroll_outer, emb_enroll_inner = emb_enroll_outer.detach(), emb_enroll_inner.detach()
+
+					if unlab_emb_inner is not None:
+						emb_enroll_inner -= unlab_emb_inner
+						emb_enroll_outer -= unlab_emb_outer
+
+					mem_embeddings_inner[enroll_utt] = emb_enroll_inner
+					mem_embeddings_outer[enroll_utt] = emb_enroll_outer
 
 				test_utt = utterances_test[i]
 
 				try:
-					emb_test = mem_embeddings[test_utt]
+					emb_test_inner = mem_embeddings_inner[test_utt]
+					emb_test_outer = mem_embeddings_outer[test_utt]
 				except KeyError:
 
 					test_utt_data = prep_feats(test_data[test_utt], args.delta).to(device)
 
-					emb_test = model.forward(test_utt_data)[1].detach() if args.inner else model.forward(test_utt_data)[0].detach()
-					if unlab_emb is not None:
-						emb_test -= unlab_emb
-					mem_embeddings[test_utt] = emb_test
+					emb_test_outer, emb_test_inner = model.forward(test_utt_data)
+					emb_test_outer, emb_test_inner = emb_test_outer.detach(), emb_test_inner.detach()
 
-				scores.append( torch.nn.functional.cosine_similarity(emb_enroll, emb_test).mean().item() )
-				out_cos.append([enroll_utt, test_utt, scores[-1]])
+					if unlab_emb is not None:
+						emb_test_inner -= unlab_emb_inner
+						emb_test_outer -= unlab_emb_outer
+
+					mem_embeddings_inner[test_utt] = emb_test_inner
+					mem_embeddings_outer[test_utt] = emb_test_outer
+
+				scores['inner'].append( torch.nn.functional.cosine_similarity(emb_enroll_inner, emb_test_inner).squeeze().item() )
+				scores['outer'].append( torch.nn.functional.cosine_similarity(emb_enroll_outer, emb_test_outer).squeeze().item() )
+
+				emb_enroll_fus = torch.cat((emb_enroll_outer, emb_enroll_inner), -1)
+				emb_test_fus = torch.cat((emb_test_outer, emb_test_inner), -1)
+
+				scores['fus_emb'].append( torch.nn.functional.cosine_similarity(emb_enroll_fus, emb_test_fus).squeeze().item() )
+				scores['fus_score'].append( 0.5*(scores['inner']+scores['outer']) )
+
+				for score_type in ['inner', 'outer', 'fus_emb', 'fus_score']:
+					out_cos[score_type].append([enroll_utt, test_utt, scores[score_type][-1]])
 
 		print('\nScoring done')
 
 		if not args.no_out:
 
-			with open(args.out_path+args.out_prefix+'cos_scores.out' if args.out_prefix is not None else args.out_path+'cos_scores.out', 'w') as f:
-				for el in out_cos:
-					item = el[0] + ' ' + el[1] + ' ' + str(el[2]) + '\n'
-					f.write("%s" % item)
+			for score_type in ['inner', 'outer', 'fus_emb', 'fus_score']:
+				if args.out_prefix:
+					out_file_name = f'{args.out_prefix}_{score_type}_cos_scores.out'
+				else:
+					out_file_name = f'{score_type}_cos_scores.out'
+
+				with open(os.path.join(args.out_path, out_file_name), 'w') as f:
+					for el in out_cos:
+						item = el[0] + ' ' + el[1] + ' ' + str(el[2]) + '\n'
+						f.write("%s" % item)
 
 	if not args.eval:
-		eer, auc, avg_precision, acc, threshold = compute_metrics(np.asarray(labels), np.asarray(scores))
-		print('ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {}, {}, {}, {}, {}'.format(eer, auc, avg_precision, acc, threshold))
+		for score_type in ['inner', 'outer', 'fus_emb', 'fus_score']:
+			print(f'Evaluation for {score_type} scores:\n')
+			eer, auc, avg_precision, acc, threshold = compute_metrics(np.asarray(labels), np.asarray(scores[score_type]))
+			print(f'ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {eer}, {auc}, {avg_precision}, {acc}, {threshold}')
