@@ -211,7 +211,7 @@ if __name__ == '__main__':
 				emb_test_fus = torch.cat((emb_test_outer, emb_test_inner), -1)
 
 				scores['fus_emb'].append( torch.nn.functional.cosine_similarity(emb_enroll_fus, emb_test_fus).squeeze().item() )
-				scores['fus_score'].append( 0.5*(scores['inner']+scores['outer']) )
+				scores['fus_score'].append( 0.5*(scores['inner'][-1]+scores['outer'][-1]) )
 
 				for score_type in ['inner', 'outer', 'fus_emb', 'fus_score']:
 					out_cos[score_type].append([enroll_utt, test_utt, scores[score_type][-1]])
