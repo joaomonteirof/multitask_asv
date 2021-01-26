@@ -40,7 +40,6 @@ if __name__ == '__main__':
 	parser.add_argument('--ncoef', type=int, default=23, metavar='N', help='number of MFCCs (default: 23)')
 	parser.add_argument('--model', choices=['resnet_mfcc', 'resnet_34', 'resnet_lstm', 'resnet_qrnn', 'resnet_stats', 'resnet_large', 'resnet_small', 'resnet_2d', 'TDNN', 'TDNN_att', 'TDNN_multihead', 'TDNN_lstm', 'TDNN_aspp', 'TDNN_mod', 'TDNN_multipool', 'transformer'], default='resnet_mfcc', help='Model arch according to input type')
 	parser.add_argument('--delta', action='store_true', default=False, help='Enables extra data channels')
-	parser.add_argument('--inner', action='store_true', default=False, help='Get embeddings from inner layer')
 	parser.add_argument('--latent-size', type=int, default=200, metavar='S', help='latent layer dimension (default: 200)')
 	parser.add_argument('--read-scores', action='store_true', default=False, help='If set, reads precomputed scores at --scores-path')
 	parser.add_argument('--no-cuda', action='store_true', default=False, help='Disables GPU use')
