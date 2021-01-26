@@ -235,4 +235,4 @@ if __name__ == '__main__':
 		for score_type in ['inner', 'outer', 'fus_emb', 'fus_score']:
 			print(f'Evaluation for {score_type} scores:\n')
 			eer, auc, avg_precision, acc, threshold = compute_metrics(np.asarray(labels), np.asarray(scores[score_type]))
-			print(f'ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {eer}, {auc}, {avg_precision}, {acc}, {threshold}')
+			print(f'ERR, AUC,  Average Precision, Accuracy and corresponding threshold: {eer}, {auc}, {avg_precision}, {acc}, {threshold}\n')
