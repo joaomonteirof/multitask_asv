@@ -58,6 +58,7 @@ class TrainLoop(object):
 		if self.valid_loader is not None:
 			self.history['valid_loss_emb'] = []
 			self.history['valid_loss_out'] = []
+			self.history['valid_loss_fus'] = []
 
 		if self.softmax:
 			self.history['softmax_batch']=[]
@@ -154,11 +155,15 @@ class TrainLoop(object):
 					except:
 						emb_scores, out_scores, labels, emb, y_ = emb_scores_batch, out_scores_batch, labels_batch, emb_batch, y_batch
 
+				fus_scores = (emb_scores + out_scores)*0.5
+
 				self.history['valid_loss_emb'].append(compute_eer(labels, emb_scores))
 				self.history['valid_loss_out'].append(compute_eer(labels, out_scores))
+				self.history['valid_loss_fus'].append(compute_eer(labels, fus_scores))
 				if self.verbose>0:
 					print('Current embedding-level validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss_emb'][-1], np.min(self.history['valid_loss_emb']), 1+np.argmin(self.history['valid_loss_emb'])))
 					print('Current output-level validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss_out'][-1], np.min(self.history['valid_loss_out']), 1+np.argmin(self.history['valid_loss_out'])))
+					print('Current fused validation loss, best validation loss, and epoch: {:0.4f}, {:0.4f}, {}'.format(self.history['valid_loss_fus'][-1], np.min(self.history['valid_loss_fus']), 1+np.argmin(self.history['valid_loss_fus'])))
 				if self.logger:
 					self.logger.add_scalar('Valid/E-EER', self.history['valid_loss_emb'][-1], self.total_iters-1)
 					self.logger.add_scalar('Valid/Best E-EER', np.min(self.history['valid_loss_emb']), self.total_iters-1)
@@ -166,6 +171,9 @@ class TrainLoop(object):
 					self.logger.add_scalar('Valid/O-EER', self.history['valid_loss_out'][-1], self.total_iters-1)
 					self.logger.add_scalar('Valid/Best O-EER', np.min(self.history['valid_loss_out']), self.total_iters-1)
 					self.logger.add_pr_curve('Valid. O-ROC', labels=labels, predictions=out_scores, global_step=self.total_iters-1)
+					self.logger.add_scalar('Valid/F-EER', self.history['valid_loss_fus'][-1], self.total_iters-1)
+					self.logger.add_scalar('Valid/Best F-EER', np.min(self.history['valid_loss_fus']), self.total_iters-1)
+					self.logger.add_pr_curve('Valid. F-ROC', labels=labels, predictions=fus_scores, global_step=self.total_iters-1)
 
 					if emb.shape[0]>20000:
 						idxs = np.random.choice(np.arange(emb.shape[0]), size=20000, replace=False)
@@ -174,6 +182,7 @@ class TrainLoop(object):
 					self.logger.add_histogram('Valid/Embeddings', values=emb, global_step=self.total_iters-1)
 					self.logger.add_histogram('Valid/E-Scores', values=emb_scores, global_step=self.total_iters-1)
 					self.logger.add_histogram('Valid/O-Scores', values=out_scores, global_step=self.total_iters-1)
+					self.logger.add_histogram('Valid/F-Scores', values=fus_scores, global_step=self.total_iters-1)
 					self.logger.add_histogram('Valid/Labels', values=labels, global_step=self.total_iters-1)
 
 					if self.verbose>1:
@@ -196,6 +205,7 @@ class TrainLoop(object):
 			if self.verbose>0:
 				print('Best embedding-level validation loss and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['valid_loss_emb']), 1+np.argmin(self.history['valid_loss_emb'])))
 				print('Best output-level validation loss and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['valid_loss_out']), 1+np.argmin(self.history['valid_loss_out'])))
+				print('Best fused validation loss and corresponding epoch: {:0.4f}, {}'.format(np.min(self.history['valid_loss_fus']), 1+np.argmin(self.history['valid_loss_fus'])))
 
 			return np.min(self.history['valid_loss_emb'])
 		else:
